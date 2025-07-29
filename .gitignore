@@ -1,0 +1,18 @@
+# Environment variables
+# Never upload your secret keys!
+.env
+
+# Python cache files
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# Virtual environment folder
+# If you use a local virtual environment, you don't want to upload it.
+venv/
+env/
+.venv/
+
+# IDE specific files (e.g., for VSCode)
+.vscode/
