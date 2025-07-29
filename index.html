@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Evo - Your Personal AI Companion</title>
+    <!-- Tailwind CSS for styling -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Google Fonts: Inter -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+        }
+        /* Simple background gradient animation */
+        .gradient-bg {
+            background: linear-gradient(-45deg, #1a202c, #2d3748, #4a5568, #2d3748);
+            background-size: 400% 400%;
+            animation: gradient 15s ease infinite;
+        }
+        @keyframes gradient {
+            0% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+            100% { background-position: 0% 50%; }
+        }
+    </style>
+</head>
+<body class="gradient-bg text-white antialiased">
+
+    <div class="min-h-screen flex flex-col items-center justify-center p-6">
+        
+        <!-- Main Content Card -->
+        <div class="bg-gray-800 bg-opacity-50 backdrop-blur-sm rounded-2xl shadow-2xl p-8 md:p-12 w-full max-w-2xl text-center border border-gray-700">
+            
+            <!-- Logo/Icon -->
+            <div class="mb-6">
+                <svg class="w-20 h-20 mx-auto text-indigo-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"></path></svg>
+            </div>
+            
+            <!-- Title -->
+            <h1 class="text-4xl md:text-5xl font-extrabold text-white mb-3">Evo is coming.</h1>
+            
+            <!-- Subtitle -->
+            <p class="text-lg md:text-xl text-gray-300 mb-8">
+                The next evolution of community interaction. A smarter, more personal AI companion for your Discord server.
+            </p>
+            
+            <!-- Dashboard Section -->
+            <div class="bg-gray-900 bg-opacity-70 rounded-lg p-6">
+                <h2 class="text-2xl font-bold text-indigo-300 mb-4">Dashboard Coming Soon</h2>
+                <p class="text-gray-400 mb-6">
+                    Soon you'll be able to sign in with Discord to manage your servers, customize Evo's personality, and unlock new features.
+                </p>
+                <a href="#" class="inline-block bg-indigo-600 hover:bg-indigo-500 text-white font-bold py-3 px-8 rounded-lg transition-transform transform hover:scale-105 shadow-lg cursor-not-allowed opacity-50">
+                    Sign In with Discord
+                </a>
+            </div>
+
+        </div>
+
+        <!-- Footer -->
+        <footer class="mt-12 text-center text-gray-500">
+            <p>&copy; 2025 Evo Bot Project. All rights reserved.</p>
+        </footer>
+
+    </div>
+
+</body>
+</html>
