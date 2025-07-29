@@ -66,7 +66,6 @@ def add_server():
     added_server = next((s for s in mock_db['user_servers'] if s['id'] == server_id), None)
     return jsonify({"status": "success", "server": added_server})
 
-# NEW: Route to remove a server
 @app.route('/api/remove-server/<server_id>', methods=['DELETE'])
 def remove_server(server_id):
     """Handles removing a server from the user's dashboard."""
@@ -87,6 +86,9 @@ def save_server_settings(server_id):
     print(f"  AI Model: {settings.get('ai_model')}")
     print(f"  API Key: ...{settings.get('api_key', '')[-4:]}")
     print(f"  Backup Key: ...{settings.get('backup_api_key', '')[-4:]}")
+    # NEW: Print the premium settings
+    print(f"  Custom Name: {settings.get('custom_name')}")
+    print(f"  Custom Personality: {settings.get('custom_personality')}")
     
     # In a real app, this is where you would encrypt the keys and save to Firebase.
     
