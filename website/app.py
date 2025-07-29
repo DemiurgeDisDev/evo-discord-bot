@@ -1,14 +1,27 @@
-from flask import Flask, jsonify, request
-from flask_cors import CORS # To handle requests between frontend and backend
+from flask import Flask, jsonify, request, redirect, session
+from flask_cors import CORS
 import os
+import requests
+from requests_oauthlib import OAuth2Session
 
 # Initialize the Flask app
 app = Flask(__name__)
 # Enable CORS to allow our frontend to talk to our backend
-CORS(app)
+CORS(app, supports_credentials=True) # supports_credentials is needed for sessions
+
+# --- CONFIGURATION FROM ENVIRONMENT VARIABLES ---
+# Load secrets from .env file (or Render's environment variables)
+app.secret_key = os.getenv('FLASK_SECRET_KEY')
+DISCORD_CLIENT_ID = os.getenv('DISCORD_CLIENT_ID')
+DISCORD_CLIENT_SECRET = os.getenv('DISCORD_CLIENT_SECRET')
+DISCORD_REDIRECT_URI = os.getenv('DISCORD_REDIRECT_URI')
+
+# Discord API endpoints
+API_BASE_URL = 'https://discord.com/api'
+AUTHORIZATION_BASE_URL = 'https://discord.com/api/oauth2/authorize'
+TOKEN_URL = 'https://discord.com/api/oauth2/token'
 
 # --- MOCK DATABASE (This will be replaced by Firebase later) ---
-# We're storing the data here in memory for now. It will reset if the server restarts.
 mock_db = {
     "user_servers": [
         {"id": '1', "name": 'Gaming Zone', "icon": 'https://placehold.co/64x64/7f9cf5/ffffff?text=GZ'},
@@ -24,76 +37,91 @@ mock_db = {
 # --- END OF MOCK DATABASE ---
 
 
-# --- API ROUTES (The "Engine" for our website) ---
+# --- API ROUTES ---
 
 @app.route('/')
 def home():
-    """A simple route to confirm the backend is running."""
-    return jsonify({
-        "status": "online",
-        "message": "Evo Backend is running successfully!"
-    })
+    return jsonify({"status": "online", "message": "Evo Backend is running successfully!"})
+
+# --- DISCORD OAUTH2 ROUTES ---
+
+@app.route('/login')
+def login():
+    """Redirects the user to Discord's authorization page."""
+    scope = ['identify', 'guilds']
+    discord = OAuth2Session(DISCORD_CLIENT_ID, redirect_uri=DISCORD_REDIRECT_URI, scope=scope)
+    authorization_url, state = discord.authorization_url(AUTHORIZATION_BASE_URL)
+    session['oauth2_state'] state
+    return redirect(authorization_url)
+
+@app.route('/callback')
+def callback():
+    """The user is sent here after authorizing on Discord."""
+    discord = OAuth2Session(DISCORD_CLIENT_ID, state=session.get('oauth2_state'), redirect_uri=DISCORD_REDIRECT_URI)
+    token = discord.fetch_token(
+        TOKEN_URL,
+        client_secret=DISCORD_CLIENT_SECRET,
+        authorization_response=request.url
+    )
+    
+    session['discord_token'] = token
+    user_info_response = discord.get(API_BASE_URL + '/users/@me')
+    user_info = user_info_response.json()
+    session['user'] = user_info
+    print(f"User logged in: {user_info['username']}#{user_info['discriminator']}")
+
+    # This now reads the live frontend URL from the environment variables you set on Render
+    frontend_url = os.getenv('FRONTEND_URL') 
+    return redirect(f"{frontend_url}/#dashboard")
+
+
+@app.route('/api/me')
+def get_current_user():
+    """Returns the currently logged-in user's info."""
+    user = session.get('user')
+    if user:
+        return jsonify(user)
+    return jsonify({"error": "Not logged in"}), 401
+
+
+# --- EXISTING API ROUTES ---
 
 @app.route('/api/user-servers', methods=['GET'])
 def get_user_servers():
-    """Returns the list of servers the user has already configured."""
     return jsonify(mock_db["user_servers"])
 
 @app.route('/api/available-servers', methods=['GET'])
 def get_available_servers():
-    """Returns the list of servers the user is an admin of, which they can add."""
-    # In a real app, this would talk to the Discord API.
     return jsonify(mock_db["available_servers"])
 
 @app.route('/api/add-server', methods=['POST'])
 def add_server():
-    """Handles adding a new server to the user's dashboard."""
     data = request.json
     server_id = data.get('id')
     server_name = data.get('name')
     server_icon = data.get('icon')
-
     if not server_id or not server_name or not server_icon:
         return jsonify({"error": "Missing server data"}), 400
-
-    # Check if server is already added
     if not any(s['id'] == server_id for s in mock_db['user_servers']):
         new_server = {"id": server_id, "name": server_name, "icon": server_icon}
         mock_db['user_servers'].append(new_server)
-        print(f"Added server: {new_server}") # For debugging
-    
-    # Find the server to return it (even if it already existed)
     added_server = next((s for s in mock_db['user_servers'] if s['id'] == server_id), None)
     return jsonify({"status": "success", "server": added_server})
 
 @app.route('/api/remove-server/<server_id>', methods=['DELETE'])
 def remove_server(server_id):
-    """Handles removing a server from the user's dashboard."""
     initial_len = len(mock_db['user_servers'])
     mock_db['user_servers'] = [s for s in mock_db['user_servers'] if s['id'] != server_id]
     if len(mock_db['user_servers']) < initial_len:
-        print(f"Removed server: {server_id}")
         return jsonify({"status": "success", "message": f"Server {server_id} removed."})
     else:
         return jsonify({"error": "Server not found"}), 404
 
-
 @app.route('/api/server-settings/<server_id>', methods=['POST'])
 def save_server_settings(server_id):
-    """Handles saving the settings for a specific server."""
     settings = request.json
-    print(f"Received settings for server {server_id}:")
-    print(f"  AI Model: {settings.get('ai_model')}")
-    print(f"  API Key: ...{settings.get('api_key', '')[-4:]}")
-    print(f"  Backup Key: ...{settings.get('backup_api_key', '')[-4:]}")
-    # NEW: Print the premium settings
-    print(f"  Custom Name: {settings.get('custom_name')}")
-    print(f"  Custom Personality: {settings.get('custom_personality')}")
-    
-    # In a real app, this is where you would encrypt the keys and save to Firebase.
-    
+    print(f"Received settings for server {server_id}: {settings}")
     return jsonify({"status": "success", "message": f"Settings for server {server_id} received."})
-
 
 # This part allows us to run the app.
 if __name__ == "__main__":
