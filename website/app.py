@@ -51,7 +51,8 @@ def login():
     scope = ['identify', 'guilds']
     discord = OAuth2Session(DISCORD_CLIENT_ID, redirect_uri=DISCORD_REDIRECT_URI, scope=scope)
     authorization_url, state = discord.authorization_url(AUTHORIZATION_BASE_URL)
-    session['oauth2_state'] state
+    # THE FIX IS HERE: Added the missing '=' sign
+    session['oauth2_state'] = state
     return redirect(authorization_url)
 
 @app.route('/callback')
