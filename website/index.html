@@ -76,13 +76,11 @@
         <!-- PAGE 2: SERVER DASHBOARD                                        -->
         <!-- =============================================================== -->
         <div id="server-dashboard" class="page-view w-full max-w-4xl relative">
-            <!-- NEW: Logout Button -->
             <button id="logout-btn" class="absolute top-0 right-0 mt-2 mr-2 text-sm bg-gray-700 hover:bg-red-600 text-white font-semibold py-2 px-4 rounded-full transition-colors">
                 Logout
             </button>
             <h1 class="text-4xl font-bold text-center mb-8">Your Servers</h1>
             <div id="server-grid" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-6">
-                <!-- Server cards will be added here by JavaScript -->
                 <div id="add-server-card" class="bg-gray-800 bg-opacity-50 backdrop-blur-sm rounded-2xl aspect-square flex items-center justify-center cursor-pointer border-2 border-dashed border-gray-600 hover:border-indigo-400 hover:bg-gray-700 transition-all">
                     <div class="text-center">
                         <svg class="w-16 h-16 text-gray-500 mx-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path></svg>
@@ -104,37 +102,78 @@
                 </div>
                 
                 <div class="space-y-6">
-                    <!-- Settings fields... -->
-                    <div>
-                        <label for="ai-model" class="block text-sm font-medium text-gray-300 mb-1">AI Model Name</label>
-                        <div class="flex items-center space-x-2">
-                            <input type="text" id="ai-model" placeholder="gemini-2.5-flash-lite-preview-06-17" class="w-full bg-gray-900 border border-gray-700 rounded-md px-3 py-2 text-white focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500">
-                            <div class="tooltip">
-                                <svg class="w-6 h-6 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
-                                <span class="tooltiptext">gemini-2.5-flash-lite-preview-06-17 is a recommended model by Evo developers.</span>
+                    <!-- API & Model Settings -->
+                    <div class="space-y-6">
+                        <div>
+                            <label for="ai-model" class="block text-sm font-medium text-gray-300 mb-1">AI Model Name</label>
+                            <div class="flex items-center space-x-2">
+                                <input type="text" id="ai-model" placeholder="gemini-2.5-flash-lite-preview-06-17" class="w-full bg-gray-900 border border-gray-700 rounded-md px-3 py-2 text-white focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500">
+                                <div class="tooltip">
+                                    <svg class="w-6 h-6 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                                    <span class="tooltiptext">gemini-2.5-flash-lite-preview-06-17 is a recommended model by Evo developers.</span>
+                                </div>
+                            </div>
+                        </div>
+                        <div>
+                            <label for="api-key" class="block text-sm font-medium text-gray-300 mb-1">API Key</label>
+                            <div class="flex items-center space-x-2">
+                                <input type="password" id="api-key" class="w-full bg-gray-900 border border-gray-700 rounded-md px-3 py-2 text-white focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500" onkeyup="updateKeyDisplay('api-key', 'api-key-display')">
+                                <span id="api-key-display" class="bg-gray-700 text-xs font-mono px-2 py-1 rounded">None</span>
+                            </div>
+                        </div>
+                        <div>
+                            <label for="backup-api-key" class="block text-sm font-medium text-gray-300 mb-1">Backup API Key (Optional)</label>
+                            <div class="flex items-center space-x-2">
+                                <input type="password" id="backup-api-key" class="w-full bg-gray-900 border border-gray-700 rounded-md px-3 py-2 text-white focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500" onkeyup="updateKeyDisplay('backup-api-key', 'backup-api-key-display')">
+                                <span id="backup-api-key-display" class="bg-gray-700 text-xs font-mono px-2 py-1 rounded">None</span>
                             </div>
                         </div>
                     </div>
-                    <div>
-                        <label for="api-key" class="block text-sm font-medium text-gray-300 mb-1">API Key</label>
-                        <div class="flex items-center space-x-2">
-                            <input type="password" id="api-key" class="w-full bg-gray-900 border border-gray-700 rounded-md px-3 py-2 text-white focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500" onkeyup="updateKeyDisplay('api-key', 'api-key-display')">
-                            <span id="api-key-display" class="bg-gray-700 text-xs font-mono px-2 py-1 rounded">None</span>
-                        </div>
-                    </div>
-                    <div>
-                        <label for="backup-api-key" class="block text-sm font-medium text-gray-300 mb-1">Backup API Key (Optional)</label>
-                        <div class="flex items-center space-x-2">
-                            <input type="password" id="backup-api-key" class="w-full bg-gray-900 border border-gray-700 rounded-md px-3 py-2 text-white focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500" onkeyup="updateKeyDisplay('backup-api-key', 'backup-api-key-display')">
-                            <span id="backup-api-key-display" class="bg-gray-700 text-xs font-mono px-2 py-1 rounded">None</span>
+
+                    <!-- NEW: Premium Section -->
+                    <div class="pt-6 border-t border-gray-700">
+                        <div id="premium-section-wrapper" class="relative">
+                            <!-- The actual fields (initially blurred) -->
+                            <div id="premium-fields" class="space-y-6">
+                                <!-- Custom Name -->
+                                <div>
+                                    <label for="custom-name" class="block text-sm font-medium text-gray-300 mb-1">Custom Name</label>
+                                    <input type="text" id="custom-name" placeholder="Evo" class="w-full bg-gray-900 border border-gray-700 rounded-md px-3 py-2 text-white focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500">
+                                </div>
+                                <!-- Custom Avatar -->
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-300 mb-1">Custom Avatar</label>
+                                    <div class="mt-2 flex items-center gap-x-3">
+                                        <img id="avatar-preview" src="https://placehold.co/64x64/4a5568/ffffff?text=Evo" class="h-16 w-16 rounded-full text-gray-500" />
+                                        <button type="button" class="rounded-md bg-white/10 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-white/20">Click to upload</button>
+                                    </div>
+                                </div>
+                                <!-- Custom Personality -->
+                                <div>
+                                    <label for="custom-personality" class="block text-sm font-medium text-gray-300 mb-1">Custom Personality</label>
+                                    <textarea id="custom-personality" rows="5" placeholder="You are Evo. Your persona is that of a goofy, airheaded, and friendly tomboy who loves anime" class="w-full bg-gray-900 border border-gray-700 rounded-md px-3 py-2 text-white focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"></textarea>
+                                </div>
+                            </div>
+
+                            <!-- The overlay -->
+                            <div id="premium-overlay" class="absolute inset-0 bg-gray-900/80 backdrop-blur-sm flex flex-col items-center justify-center rounded-lg p-6 text-center">
+                                <h3 class="text-2xl font-bold text-indigo-300">Evo Premium</h3>
+                                <ul class="my-4 space-y-2 text-gray-300 list-inside">
+                                    <li>✓ Custom Name</li>
+                                    <li>✓ Custom Personality</li>
+                                    <li>✓ Custom Avatar</li>
+                                </ul>
+                                <button id="subscribe-btn" class="mt-4 bg-indigo-600 hover:bg-indigo-500 text-white font-bold py-3 px-8 rounded-full shadow-lg transition-transform transform hover:scale-105">
+                                    Subscribe 2.99€/month
+                                </button>
+                            </div>
                         </div>
                     </div>
 
                     <!-- Action Buttons -->
-                    <div class="pt-4 border-t border-gray-700 flex flex-col sm:flex-row gap-4">
-                        <button id="save-settings-btn" class="w-full bg-indigo-600 hover:bg-indigo-500 text-white font-bold py-3 px-6 rounded-lg shadow-lg transition-transform transform hover:scale-105">Save Settings</button>
-                        <!-- NEW: Remove Server Button -->
-                        <button id="remove-server-btn" class="w-full bg-red-800 hover:bg-red-700 text-white font-bold py-3 px-6 rounded-lg shadow-lg transition-transform transform hover:scale-105">Remove Server</button>
+                    <div class="pt-6 border-t border-gray-700 flex flex-col sm:flex-row gap-4">
+                        <button id="save-settings-btn" class="w-full bg-indigo-600 hover:bg-indigo-500 text-white font-bold py-3 px-6 rounded-lg shadow-lg">Save Settings</button>
+                        <button id="remove-server-btn" class="w-full bg-red-800 hover:bg-red-700 text-white font-bold py-3 px-6 rounded-lg shadow-lg">Remove Server</button>
                     </div>
                 </div>
             </div>
@@ -155,7 +194,6 @@
         </div>
     </div>
 
-    <!-- NEW: Remove Confirmation Modal -->
     <div id="remove-confirm-modal" style="display: none;" class="fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center p-4 z-50">
         <div class="bg-gray-800 rounded-2xl w-full max-w-md shadow-2xl p-8 text-center">
             <h2 class="text-2xl font-bold mb-4">Are you sure?</h2>
@@ -169,8 +207,6 @@
 
 
     <script>
-        // The URL of our backend. For local testing, it's http://127.0.0.1:8080
-        // When deployed on Render, you would change this to your backend's .onrender.com URL
         const API_BASE_URL = 'https://evo-app-aiop.onrender.com'; 
 
         // --- GLOBAL STATE ---
@@ -182,6 +218,8 @@
         const serverSettings = document.getElementById('server-settings');
         const addServerModal = document.getElementById('add-server-modal');
         const removeConfirmModal = document.getElementById('remove-confirm-modal');
+        const premiumFields = document.getElementById('premium-fields');
+        const premiumOverlay = document.getElementById('premium-overlay');
 
         const testDashboardBtn = document.getElementById('test-dashboard-btn');
         const addServerCard = document.getElementById('add-server-card');
@@ -192,6 +230,7 @@
         const removeServerBtn = document.getElementById('remove-server-btn');
         const cancelRemoveBtn = document.getElementById('cancel-remove-btn');
         const confirmRemoveBtn = document.getElementById('confirm-remove-btn');
+        const subscribeBtn = document.getElementById('subscribe-btn');
         
         const serverGrid = document.getElementById('server-grid');
         const modalServerList = document.getElementById('modal-server-list');
@@ -228,6 +267,12 @@
         confirmRemoveBtn.addEventListener('click', () => {
             if(currentServer) removeServer(currentServer.id);
         });
+        
+        subscribeBtn.addEventListener('click', () => {
+            // This is for testing. In a real app, this would trigger a payment flow.
+            premiumOverlay.style.display = 'none';
+            premiumFields.classList.remove('blur-md', 'pointer-events-none');
+        });
 
         // --- API & DYNAMIC RENDERING LOGIC ---
 
@@ -259,7 +304,6 @@
 
         async function loadAndRenderModalServerList() {
             try {
-                // Fetch both lists to compare them
                 const [userServersRes, availableServersRes] = await Promise.all([
                     fetch(`${API_BASE_URL}/api/user-servers`),
                     fetch(`${API_BASE_URL}/api/available-servers`)
@@ -330,7 +374,10 @@
             const settings = {
                 ai_model: document.getElementById('ai-model').value,
                 api_key: document.getElementById('api-key').value,
-                backup_api_key: document.getElementById('backup-api-key').value
+                backup_api_key: document.getElementById('backup-api-key').value,
+                // NEW: Add premium fields to the data we send
+                custom_name: document.getElementById('custom-name').value,
+                custom_personality: document.getElementById('custom-personality').value
             };
             
             saveSettingsBtn.textContent = 'Saving...';
@@ -360,12 +407,25 @@
             currentServer = server;
             document.getElementById('settings-server-icon').src = server.icon;
             document.getElementById('settings-server-name').textContent = server.name;
-            // Reset fields
+            
+            // Reset all fields
             document.getElementById('ai-model').value = '';
             document.getElementById('api-key').value = '';
             document.getElementById('backup-api-key').value = '';
+            document.getElementById('custom-name').value = '';
+
+            // Set placeholder for personality
+            const personalityTextarea = document.getElementById('custom-personality');
+            personalityTextarea.value = '';
+            personalityTextarea.placeholder = "You are Evo. Your persona is that of a goofy, airheaded, and friendly tomboy who loves anime";
+
+
             updateKeyDisplay('api-key', 'api-key-display');
             updateKeyDisplay('backup-api-key', 'backup-api-key-display');
+
+            // Reset premium section to its locked state for every server initially
+            premiumOverlay.style.display = 'flex';
+            premiumFields.classList.add('blur-md', 'pointer-events-none');
 
             showPage('server-settings');
         }
