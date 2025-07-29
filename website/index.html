@@ -62,12 +62,9 @@
                 <p class="text-lg md:text-xl text-gray-300 mb-8">An AI companion that learns, remembers, and grows with your community.</p>
                 <!-- Centered Button Container -->
                 <div class="flex flex-col items-center space-y-4 w-full">
-                    <button disabled class="w-full max-w-xs bg-indigo-600 text-white font-bold py-3 px-8 rounded-full shadow-lg opacity-50 cursor-not-allowed">
+                    <a id="login-btn" href="#" class="w-full max-w-xs bg-indigo-600 hover:bg-indigo-500 text-white font-bold py-3 px-8 rounded-full shadow-lg transition-transform transform hover:scale-105 text-center">
                         Sign In with Discord
-                    </button>
-                    <button id="test-dashboard-btn" class="w-full max-w-xs bg-gray-600 hover:bg-gray-500 text-white font-bold py-3 px-8 rounded-full shadow-lg transition-transform transform hover:scale-105">
-                        Enter Test Dashboard
-                    </button>
+                    </a>
                 </div>
             </div>
         </div>
@@ -76,9 +73,15 @@
         <!-- PAGE 2: SERVER DASHBOARD                                        -->
         <!-- =============================================================== -->
         <div id="server-dashboard" class="page-view w-full max-w-4xl relative">
-            <button id="logout-btn" class="absolute top-0 right-0 mt-2 mr-2 text-sm bg-gray-700 hover:bg-red-600 text-white font-semibold py-2 px-4 rounded-full transition-colors">
-                Logout
-            </button>
+            <div class="absolute top-0 right-0 mt-2 mr-2 flex items-center space-x-4">
+                <div id="user-info" class="text-right">
+                    <p class="font-bold text-white">Not Logged In</p>
+                    <p class="text-xs text-gray-400">#0000</p>
+                </div>
+                <button id="logout-btn" class="text-sm bg-gray-700 hover:bg-red-600 text-white font-semibold py-2 px-4 rounded-full transition-colors">
+                    Logout
+                </button>
+            </div>
             <h1 class="text-4xl font-bold text-center mb-8">Your Servers</h1>
             <div id="server-grid" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-6">
                 <div id="add-server-card" class="bg-gray-800 bg-opacity-50 backdrop-blur-sm rounded-2xl aspect-square flex items-center justify-center cursor-pointer border-2 border-dashed border-gray-600 hover:border-indigo-400 hover:bg-gray-700 transition-all">
@@ -130,17 +133,14 @@
                         </div>
                     </div>
 
-                    <!-- NEW: Premium Section -->
+                    <!-- Premium Section -->
                     <div class="pt-6 border-t border-gray-700">
                         <div id="premium-section-wrapper" class="relative">
-                            <!-- The actual fields (initially blurred) -->
                             <div id="premium-fields" class="space-y-6">
-                                <!-- Custom Name -->
                                 <div>
                                     <label for="custom-name" class="block text-sm font-medium text-gray-300 mb-1">Custom Name</label>
                                     <input type="text" id="custom-name" placeholder="Evo" class="w-full bg-gray-900 border border-gray-700 rounded-md px-3 py-2 text-white focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500">
                                 </div>
-                                <!-- Custom Avatar -->
                                 <div>
                                     <label class="block text-sm font-medium text-gray-300 mb-1">Custom Avatar</label>
                                     <div class="mt-2 flex items-center gap-x-3">
@@ -148,14 +148,11 @@
                                         <button type="button" class="rounded-md bg-white/10 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-white/20">Click to upload</button>
                                     </div>
                                 </div>
-                                <!-- Custom Personality -->
                                 <div>
                                     <label for="custom-personality" class="block text-sm font-medium text-gray-300 mb-1">Custom Personality</label>
                                     <textarea id="custom-personality" rows="5" placeholder="You are Evo. Your persona is that of a goofy, airheaded, and friendly tomboy who loves anime" class="w-full bg-gray-900 border border-gray-700 rounded-md px-3 py-2 text-white focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"></textarea>
                                 </div>
                             </div>
-
-                            <!-- The overlay -->
                             <div id="premium-overlay" class="absolute inset-0 bg-gray-900/80 backdrop-blur-sm flex flex-col items-center justify-center rounded-lg p-6 text-center">
                                 <h3 class="text-2xl font-bold text-indigo-300">Evo Premium</h3>
                                 <ul class="my-4 space-y-2 text-gray-300 list-inside">
@@ -181,9 +178,7 @@
 
     </div>
 
-    <!-- =============================================================== -->
-    <!-- MODALS                                                          -->
-    <!-- =============================================================== -->
+    <!-- MODALS -->
     <div id="add-server-modal" style="display: none;" class="fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center p-4 z-50">
         <div class="bg-gray-800 rounded-2xl w-full max-w-md shadow-2xl">
             <div class="p-6 border-b border-gray-700 flex justify-between items-center">
@@ -207,6 +202,7 @@
 
 
     <script>
+        // THIS IS THE ONLY LINE YOU NEED TO CHANGE FOR PRODUCTION
         const API_BASE_URL = 'https://evo-app-aiop.onrender.com'; 
 
         // --- GLOBAL STATE ---
@@ -220,8 +216,9 @@
         const removeConfirmModal = document.getElementById('remove-confirm-modal');
         const premiumFields = document.getElementById('premium-fields');
         const premiumOverlay = document.getElementById('premium-overlay');
+        const userInfoDiv = document.getElementById('user-info');
 
-        const testDashboardBtn = document.getElementById('test-dashboard-btn');
+        const loginBtn = document.getElementById('login-btn');
         const addServerCard = document.getElementById('add-server-card');
         const closeModalBtn = document.getElementById('close-modal-btn');
         const backToDashboardBtn = document.getElementById('back-to-dashboard-btn');
@@ -244,10 +241,7 @@
             else landingPage.style.display = 'block';
         }
 
-        testDashboardBtn.addEventListener('click', () => {
-            loadAndRenderServerDashboard();
-            showPage('server-dashboard');
-        });
+        loginBtn.href = `${API_BASE_URL}/login`;
 
         addServerCard.addEventListener('click', () => {
             loadAndRenderModalServerList();
@@ -256,7 +250,10 @@
 
         closeModalBtn.addEventListener('click', () => addServerModal.style.display = 'none');
         backToDashboardBtn.addEventListener('click', () => showPage('server-dashboard'));
-        logoutBtn.addEventListener('click', () => showPage('landing-page'));
+        logoutBtn.addEventListener('click', () => {
+            // In a real app, you'd also call a /logout endpoint on the backend
+            showPage('landing-page');
+        });
         removeServerBtn.addEventListener('click', () => removeConfirmModal.style.display = 'flex');
         cancelRemoveBtn.addEventListener('click', () => removeConfirmModal.style.display = 'none');
         
@@ -269,12 +266,23 @@
         });
         
         subscribeBtn.addEventListener('click', () => {
-            // This is for testing. In a real app, this would trigger a payment flow.
             premiumOverlay.style.display = 'none';
             premiumFields.classList.remove('blur-md', 'pointer-events-none');
         });
 
         // --- API & DYNAMIC RENDERING LOGIC ---
+
+        async function updateUserInfo() {
+            try {
+                const response = await fetch(`${API_BASE_URL}/api/me`, {credentials: 'include'});
+                if (!response.ok) return; // Not logged in
+                const user = await response.json();
+                userInfoDiv.innerHTML = `
+                    <p class="font-bold text-white">${user.username}</p>
+                    <p class="text-xs text-gray-400">#${user.discriminator}</p>
+                `;
+            } catch(e) { console.error("Could not fetch user info", e); }
+        }
 
         async function loadAndRenderServerDashboard() {
             try {
@@ -298,7 +306,6 @@
                 serverGrid.appendChild(addServerCard);
             } catch (error) {
                 console.error('Failed to load user servers:', error);
-                alert('Could not connect to the backend. Is it running?');
             }
         }
 
@@ -334,7 +341,6 @@
                 });
             } catch (error) {
                 console.error('Failed to load available servers:', error);
-                modalServerList.innerHTML = `<p class="p-4 text-center text-red-400">Could not load servers.</p>`;
             }
         }
         
@@ -366,7 +372,6 @@
                 showPage('server-dashboard');
             } catch (error) {
                 console.error('Failed to remove server:', error);
-                alert('Could not remove server.');
             }
         }
 
@@ -375,7 +380,6 @@
                 ai_model: document.getElementById('ai-model').value,
                 api_key: document.getElementById('api-key').value,
                 backup_api_key: document.getElementById('backup-api-key').value,
-                // NEW: Add premium fields to the data we send
                 custom_name: document.getElementById('custom-name').value,
                 custom_personality: document.getElementById('custom-personality').value
             };
@@ -391,12 +395,10 @@
                 });
                 if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
                 const result = await response.json();
-                console.log('Save result:', result);
                 alert('Settings saved! (Check your backend console)');
                 showPage('server-dashboard');
             } catch (error) {
                 console.error('Failed to save settings:', error);
-                alert('Could not save settings. Is the backend running?');
             } finally {
                 saveSettingsBtn.textContent = 'Save Settings';
                 saveSettingsBtn.disabled = false;
@@ -407,30 +409,20 @@
             currentServer = server;
             document.getElementById('settings-server-icon').src = server.icon;
             document.getElementById('settings-server-name').textContent = server.name;
-            
-            // Reset all fields
             document.getElementById('ai-model').value = '';
             document.getElementById('api-key').value = '';
             document.getElementById('backup-api-key').value = '';
             document.getElementById('custom-name').value = '';
-
-            // Set placeholder for personality
             const personalityTextarea = document.getElementById('custom-personality');
             personalityTextarea.value = '';
             personalityTextarea.placeholder = "You are Evo. Your persona is that of a goofy, airheaded, and friendly tomboy who loves anime";
-
-
             updateKeyDisplay('api-key', 'api-key-display');
             updateKeyDisplay('backup-api-key', 'backup-api-key-display');
-
-            // Reset premium section to its locked state for every server initially
             premiumOverlay.style.display = 'flex';
             premiumFields.classList.add('blur-md', 'pointer-events-none');
-
             showPage('server-settings');
         }
 
-        // --- UTILITY FUNCTIONS ---
         function updateKeyDisplay(inputId, displayId) {
             const input = document.getElementById(inputId);
             const display = document.getElementById(displayId);
@@ -443,9 +435,18 @@
             }
         }
         
-        // Ensure only the landing page is visible on initial load
+        // --- INITIALIZATION ---
         document.addEventListener('DOMContentLoaded', () => {
-            showPage('landing-page');
+            // Check if the URL has #dashboard in it, which means we just logged in
+            if (window.location.hash === '#dashboard') {
+                // Remove the hash from the URL so it looks clean
+                history.pushState("", document.title, window.location.pathname + window.location.search);
+                updateUserInfo();
+                loadAndRenderServerDashboard();
+                showPage('server-dashboard');
+            } else {
+                showPage('landing-page');
+            }
         });
     </script>
 </body>
