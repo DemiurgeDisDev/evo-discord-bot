@@ -23,7 +23,7 @@
             100% { background-position: 0% 50%; }
         }
         /* Hide elements by default */
-        .hidden-view { display: none; }
+        .page-view { display: none; }
         /* Tooltip styles */
         .tooltip { position: relative; display: inline-block; }
         .tooltip .tooltiptext {
@@ -60,12 +60,12 @@
                 </div>
                 <h1 class="text-5xl md:text-7xl font-black text-white tracking-tighter mb-4">Evo</h1>
                 <p class="text-lg md:text-xl text-gray-300 mb-8">An AI companion that learns, remembers, and grows with your community.</p>
-                <div class="space-y-4">
-                    <button disabled class="w-full md:w-auto bg-indigo-600 text-white font-bold py-3 px-8 rounded-full shadow-lg opacity-50 cursor-not-allowed flex items-center justify-center space-x-2">
+                <!-- Centered Button Container -->
+                <div class="flex flex-col items-center space-y-4 w-full">
+                    <button disabled class="w-full max-w-xs bg-indigo-600 text-white font-bold py-3 px-8 rounded-full shadow-lg opacity-50 cursor-not-allowed flex items-center justify-center space-x-2">
                         <span>Sign In with Discord</span>
                     </button>
-                    <!-- This is our new test button -->
-                    <button id="test-dashboard-btn" class="w-full md:w-auto bg-gray-600 hover:bg-gray-500 text-white font-bold py-3 px-8 rounded-full shadow-lg transition-transform transform hover:scale-105">
+                    <button id="test-dashboard-btn" class="w-full max-w-xs bg-gray-600 hover:bg-gray-500 text-white font-bold py-3 px-8 rounded-full shadow-lg transition-transform transform hover:scale-105">
                         Enter Test Dashboard
                     </button>
                 </div>
@@ -75,7 +75,7 @@
         <!-- =============================================================== -->
         <!-- PAGE 2: SERVER DASHBOARD                                        -->
         <!-- =============================================================== -->
-        <div id="server-dashboard" class="hidden-view w-full max-w-4xl">
+        <div id="server-dashboard" class="page-view w-full max-w-4xl">
             <h1 class="text-4xl font-bold text-center mb-8">Your Servers</h1>
             <div id="server-grid" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-6">
                 <!-- Server cards will be added here by JavaScript -->
@@ -91,7 +91,7 @@
         <!-- =============================================================== -->
         <!-- PAGE 3: SERVER SETTINGS                                         -->
         <!-- =============================================================== -->
-        <div id="server-settings" class="hidden-view w-full max-w-2xl">
+        <div id="server-settings" class="page-view w-full max-w-2xl">
             <button id="back-to-dashboard-btn" class="mb-6 text-indigo-400 hover:text-indigo-300 font-semibold">&larr; Back to Dashboard</button>
             <div class="bg-gray-800 bg-opacity-50 backdrop-blur-sm rounded-2xl p-8 shadow-2xl">
                 <div class="flex items-center mb-6">
@@ -140,11 +140,11 @@
     <!-- =============================================================== -->
     <!-- MODAL: ADD SERVER LIST                                          -->
     <!-- =============================================================== -->
-    <div id="add-server-modal" class="hidden-view fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center p-4">
+    <div id="add-server-modal" class="page-view fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center p-4">
         <div class="bg-gray-800 rounded-2xl w-full max-w-md shadow-2xl">
             <div class="p-6 border-b border-gray-700 flex justify-between items-center">
                 <h2 class="text-2xl font-bold">Select a Server</h2>
-                <button id="close-modal-btn" class="text-gray-400 hover:text-white">&times;</button>
+                <button id="close-modal-btn" class="text-gray-400 hover:text-white text-3xl leading-none">&times;</button>
             </div>
             <div id="modal-server-list" class="p-2 max-h-96 overflow-y-auto">
                 <!-- Server list items will be added here by JavaScript -->
@@ -156,7 +156,7 @@
     <script>
         // The URL of our backend. For local testing, it's http://127.0.0.1:8080
         // When deployed on Render, you would change this to your backend's .onrender.com URL
-        const API_BASE_URL = 'https://evo-app-aiop.onrender.com'; 
+        const API_BASE_URL = 'http://127.0.0.1:8080'; 
 
         // --- GLOBAL STATE ---
         let currentServer = null;
@@ -177,29 +177,34 @@
         const modalServerList = document.getElementById('modal-server-list');
 
         // --- PAGE NAVIGATION LOGIC ---
-        function showPage(page) {
-            landingPage.classList.add('hidden-view');
-            serverDashboard.classList.add('hidden-view');
-            serverSettings.classList.add('hidden-view');
-            page.classList.remove('hidden-view');
+        function showPage(pageId) {
+            document.querySelectorAll('.page-view').forEach(p => p.style.display = 'none');
+            landingPage.style.display = 'none';
+            
+            const page = document.getElementById(pageId);
+            if (page) {
+                page.style.display = 'block';
+            } else {
+                landingPage.style.display = 'block'; // Fallback to landing page
+            }
         }
 
         testDashboardBtn.addEventListener('click', () => {
             loadAndRenderServerDashboard();
-            showPage(serverDashboard);
+            showPage('server-dashboard');
         });
 
         addServerCard.addEventListener('click', () => {
             loadAndRenderModalServerList();
-            addServerModal.classList.remove('hidden-view');
+            addServerModal.style.display = 'flex'; // Show modal
         });
 
         closeModalBtn.addEventListener('click', () => {
-            addServerModal.classList.add('hidden-view');
+            addServerModal.style.display = 'none'; // Hide modal
         });
         
         backToDashboardBtn.addEventListener('click', () => {
-            showPage(serverDashboard);
+            showPage('server-dashboard');
         });
         
         saveSettingsBtn.addEventListener('click', () => {
@@ -213,6 +218,7 @@
         async function loadAndRenderServerDashboard() {
             try {
                 const response = await fetch(`${API_BASE_URL}/api/user-servers`);
+                if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
                 const userServers = await response.json();
                 
                 serverGrid.innerHTML = ''; 
@@ -238,6 +244,7 @@
         async function loadAndRenderModalServerList() {
             try {
                 const response = await fetch(`${API_BASE_URL}/api/available-servers`);
+                if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
                 const availableServers = await response.json();
 
                 modalServerList.innerHTML = '';
@@ -263,9 +270,11 @@
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify(server)
                 });
+                if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
                 const result = await response.json();
-                addServerModal.classList.add('hidden-view');
-                loadAndRenderServerDashboard();
+                
+                addServerModal.style.display = 'none';
+                await loadAndRenderServerDashboard();
                 showSettingsForServer(result.server);
             } catch (error) {
                 console.error('Failed to add server:', error);
@@ -288,10 +297,11 @@
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify(settings)
                 });
+                if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
                 const result = await response.json();
                 console.log('Save result:', result);
                 alert('Settings saved! (Check your backend console)');
-                showPage(serverDashboard); // Go back to dashboard after saving
+                showPage('server-dashboard');
             } catch (error) {
                 console.error('Failed to save settings:', error);
                 alert('Could not save settings. Is the backend running?');
@@ -302,7 +312,7 @@
         }
 
         function showSettingsForServer(server) {
-            currentServer = server; // Store the current server globally
+            currentServer = server;
             document.getElementById('settings-server-icon').src = server.icon;
             document.getElementById('settings-server-name').textContent = server.name;
             // Reset fields
@@ -312,7 +322,7 @@
             updateKeyDisplay('api-key', 'api-key-display');
             updateKeyDisplay('backup-api-key', 'backup-api-key-display');
 
-            showPage(serverSettings);
+            showPage('server-settings');
         }
 
         // --- UTILITY FUNCTIONS ---
@@ -328,6 +338,10 @@
             }
         }
         
+        // Ensure only the landing page is visible on initial load
+        document.addEventListener('DOMContentLoaded', () => {
+            showPage('landing-page');
+        });
     </script>
 </body>
 </html>
