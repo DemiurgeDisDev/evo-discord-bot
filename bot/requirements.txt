@@ -1,22 +1,4 @@
-# For the Discord Bot core functionality
 discord.py
-
-# For connecting to the Google Gemini AI
 google-generativeai
-
-# For loading secret keys during local development
 python-dotenv
-
-# For connecting to the Firebase Database
 firebase-admin
-
-# For building the website's backend API
-Flask
-gunicorn
-
-# For handling "Sign in with Discord" (OAuth)
-requests
-requests-oauthlib
-
-# For encrypting user API keys securely
-cryptography
