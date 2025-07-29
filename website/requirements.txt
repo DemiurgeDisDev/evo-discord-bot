@@ -1,0 +1,7 @@
+Flask
+gunicorn
+python-dotenv
+firebase-admin
+requests
+requests-oauthlib
+cryptography
