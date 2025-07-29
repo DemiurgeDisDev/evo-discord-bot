@@ -79,7 +79,6 @@
             <h1 class="text-4xl font-bold text-center mb-8">Your Servers</h1>
             <div id="server-grid" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-6">
                 <!-- Server cards will be added here by JavaScript -->
-                <!-- Add New Server Card -->
                 <div id="add-server-card" class="bg-gray-800 bg-opacity-50 backdrop-blur-sm rounded-2xl aspect-square flex items-center justify-center cursor-pointer border-2 border-dashed border-gray-600 hover:border-indigo-400 hover:bg-gray-700 transition-all">
                     <div class="text-center">
                         <svg class="w-16 h-16 text-gray-500 mx-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path></svg>
@@ -128,6 +127,10 @@
                             <span id="backup-api-key-display" class="bg-gray-700 text-xs font-mono px-2 py-1 rounded">None</span>
                         </div>
                     </div>
+                    <!-- Save Button -->
+                    <div class="pt-2">
+                        <button id="save-settings-btn" class="w-full bg-indigo-600 hover:bg-indigo-500 text-white font-bold py-3 px-6 rounded-lg shadow-lg transition-transform transform hover:scale-105">Save Settings</button>
+                    </div>
                 </div>
             </div>
         </div>
@@ -151,17 +154,12 @@
 
 
     <script>
-        // --- MOCK DATA (This would come from your backend later) ---
-        const userServers = [
-            { id: '1', name: 'Gaming Zone', icon: 'https://placehold.co/64x64/7f9cf5/ffffff?text=GZ' },
-            { id: '2', name: 'Art Club', icon: 'https://placehold.co/64x64/f56565/ffffff?text=AC' }
-        ];
+        // The URL of our backend. For local testing, it's http://127.0.0.1:8080
+        // When deployed on Render, you would change this to your backend's .onrender.com URL
+        const API_BASE_URL = 'http://127.0.0.1:8080'; 
 
-        const availableServers = [
-            { id: '3', name: 'Study Group', icon: 'https://placehold.co/64x64/48bb78/ffffff?text=SG' },
-            { id: '4', name: 'Anime Fans', icon: 'https://placehold.co/64x64/f6e05e/ffffff?text=AF' },
-            ...userServers // Include already added servers for demo purposes
-        ];
+        // --- GLOBAL STATE ---
+        let currentServer = null;
 
         // --- DOM ELEMENTS ---
         const landingPage = document.getElementById('landing-page');
@@ -173,6 +171,7 @@
         const addServerCard = document.getElementById('add-server-card');
         const closeModalBtn = document.getElementById('close-modal-btn');
         const backToDashboardBtn = document.getElementById('back-to-dashboard-btn');
+        const saveSettingsBtn = document.getElementById('save-settings-btn');
         
         const serverGrid = document.getElementById('server-grid');
         const modalServerList = document.getElementById('modal-server-list');
@@ -186,12 +185,12 @@
         }
 
         testDashboardBtn.addEventListener('click', () => {
-            renderServerDashboard();
+            loadAndRenderServerDashboard();
             showPage(serverDashboard);
         });
 
         addServerCard.addEventListener('click', () => {
-            renderModalServerList();
+            loadAndRenderModalServerList();
             addServerModal.classList.remove('hidden-view');
         });
 
@@ -202,50 +201,108 @@
         backToDashboardBtn.addEventListener('click', () => {
             showPage(serverDashboard);
         });
+        
+        saveSettingsBtn.addEventListener('click', () => {
+            if (currentServer) {
+                saveSettingsForServer(currentServer.id);
+            }
+        });
 
-        // --- DYNAMIC RENDERING LOGIC ---
-        function renderServerDashboard() {
-            // Clear existing servers except the "add" card
-            serverGrid.innerHTML = ''; 
-            
-            userServers.forEach(server => {
-                const card = document.createElement('div');
-                card.className = 'bg-gray-800 bg-opacity-50 backdrop-blur-sm rounded-2xl aspect-square flex items-center justify-center cursor-pointer hover:ring-2 hover:ring-indigo-400 transition-all p-4';
-                card.innerHTML = `
-                    <div class="text-center">
-                        <img src="${server.icon}" alt="${server.name}" class="w-16 h-16 rounded-full mx-auto mb-2">
-                        <p class="font-semibold text-white truncate">${server.name}</p>
-                    </div>
-                `;
-                card.addEventListener('click', () => showSettingsForServer(server));
-                serverGrid.appendChild(card);
-            });
-            serverGrid.appendChild(addServerCard); // Re-add the add card
+        // --- API & DYNAMIC RENDERING LOGIC ---
+
+        async function loadAndRenderServerDashboard() {
+            try {
+                const response = await fetch(`${API_BASE_URL}/api/user-servers`);
+                const userServers = await response.json();
+                
+                serverGrid.innerHTML = ''; 
+                userServers.forEach(server => {
+                    const card = document.createElement('div');
+                    card.className = 'bg-gray-800 bg-opacity-50 backdrop-blur-sm rounded-2xl aspect-square flex items-center justify-center cursor-pointer hover:ring-2 hover:ring-indigo-400 transition-all p-4';
+                    card.innerHTML = `
+                        <div class="text-center">
+                            <img src="${server.icon}" alt="${server.name}" class="w-16 h-16 rounded-full mx-auto mb-2">
+                            <p class="font-semibold text-white truncate">${server.name}</p>
+                        </div>
+                    `;
+                    card.addEventListener('click', () => showSettingsForServer(server));
+                    serverGrid.appendChild(card);
+                });
+                serverGrid.appendChild(addServerCard);
+            } catch (error) {
+                console.error('Failed to load user servers:', error);
+                alert('Could not connect to the backend. Is it running?');
+            }
         }
 
-        function renderModalServerList() {
-            modalServerList.innerHTML = '';
-            availableServers.forEach(server => {
-                const item = document.createElement('div');
-                item.className = 'flex items-center p-3 hover:bg-gray-700 rounded-lg cursor-pointer';
-                item.innerHTML = `
-                    <img src="${server.icon}" alt="${server.name}" class="w-10 h-10 rounded-full mr-4">
-                    <span class="font-semibold">${server.name}</span>
-                `;
-                item.addEventListener('click', () => {
-                    // In a real app, this would save to the backend
-                    if (!userServers.find(s => s.id === server.id)) {
-                        userServers.push(server);
-                    }
-                    addServerModal.classList.add('hidden-view');
-                    renderServerDashboard();
-                    showSettingsForServer(server);
+        async function loadAndRenderModalServerList() {
+            try {
+                const response = await fetch(`${API_BASE_URL}/api/available-servers`);
+                const availableServers = await response.json();
+
+                modalServerList.innerHTML = '';
+                availableServers.forEach(server => {
+                    const item = document.createElement('div');
+                    item.className = 'flex items-center p-3 hover:bg-gray-700 rounded-lg cursor-pointer';
+                    item.innerHTML = `
+                        <img src="${server.icon}" alt="${server.name}" class="w-10 h-10 rounded-full mr-4">
+                        <span class="font-semibold">${server.name}</span>
+                    `;
+                    item.addEventListener('click', () => addServer(server));
+                    modalServerList.appendChild(item);
                 });
-                modalServerList.appendChild(item);
-            });
+            } catch (error) {
+                console.error('Failed to load available servers:', error);
+            }
+        }
+        
+        async function addServer(server) {
+            try {
+                const response = await fetch(`${API_BASE_URL}/api/add-server`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(server)
+                });
+                const result = await response.json();
+                addServerModal.classList.add('hidden-view');
+                loadAndRenderServerDashboard();
+                showSettingsForServer(result.server);
+            } catch (error) {
+                console.error('Failed to add server:', error);
+            }
+        }
+
+        async function saveSettingsForServer(serverId) {
+            const settings = {
+                ai_model: document.getElementById('ai-model').value,
+                api_key: document.getElementById('api-key').value,
+                backup_api_key: document.getElementById('backup-api-key').value
+            };
+            
+            saveSettingsBtn.textContent = 'Saving...';
+            saveSettingsBtn.disabled = true;
+
+            try {
+                const response = await fetch(`${API_BASE_URL}/api/server-settings/${serverId}`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(settings)
+                });
+                const result = await response.json();
+                console.log('Save result:', result);
+                alert('Settings saved! (Check your backend console)');
+                showPage(serverDashboard); // Go back to dashboard after saving
+            } catch (error) {
+                console.error('Failed to save settings:', error);
+                alert('Could not save settings. Is the backend running?');
+            } finally {
+                saveSettingsBtn.textContent = 'Save Settings';
+                saveSettingsBtn.disabled = false;
+            }
         }
 
         function showSettingsForServer(server) {
+            currentServer = server; // Store the current server globally
             document.getElementById('settings-server-icon').src = server.icon;
             document.getElementById('settings-server-name').textContent = server.name;
             // Reset fields
@@ -271,9 +328,6 @@
             }
         }
         
-        // Initial render on load
-        renderServerDashboard();
-
     </script>
 </body>
 </html>
