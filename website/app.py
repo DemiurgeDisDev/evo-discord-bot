@@ -77,16 +77,31 @@ def home():
 def get_bot_info():
     if not BOT_TOKEN: return jsonify({"error": "Bot token not configured"}), 500
     headers = {"Authorization": f"Bot {BOT_TOKEN}"}
-    response = requests.get(f"{API_BASE_URL}/users/@me", headers=headers)
-    if response.status_code == 200:
-        bot_user = response.json()
+    
+    # First, try to get the application icon, as this is what's usually set in the dev portal.
+    app_response = requests.get(f"{API_BASE_URL}/oauth2/applications/@me", headers=headers)
+    if app_response.status_code == 200:
+        app_info = app_response.json()
+        icon_hash = app_info.get('icon')
+        app_id = app_info.get('id')
+        if icon_hash:
+            avatar_url = f"https://cdn.discordapp.com/app-icons/{app_id}/{icon_hash}.png?size=64"
+            return jsonify({"avatar": avatar_url})
+
+    # As a fallback, try to get the bot's user avatar.
+    user_response = requests.get(f"{API_BASE_URL}/users/@me", headers=headers)
+    if user_response.status_code == 200:
+        bot_user = user_response.json()
         avatar_hash = bot_user.get('avatar')
         bot_id = bot_user.get('id')
         if avatar_hash:
-            avatar_url = f"https://cdn.discordapp.com/avatars/{bot_id}/{avatar_hash}.png"
+            avatar_url = f"https://cdn.discordapp.com/avatars/{bot_id}/{avatar_hash}.png?size=64"
         else:
+            # Default Discord avatar if no user avatar is set
             avatar_url = "https://cdn.discordapp.com/embed/avatars/0.png"
         return jsonify({"avatar": avatar_url})
+
+    # If both attempts fail
     return jsonify({"error": "Failed to fetch bot info"}), 500
 
 
