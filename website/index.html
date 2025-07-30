@@ -13,7 +13,7 @@
     <style>
         body { font-family: 'Inter', sans-serif; }
         .gradient-bg {
-            background: linear-gradient(-45deg, #1a202c, #2d3748, #4a5568, #2d3748);
+            background: linear-gradient(-45deg, #1a202c, #2d3748, #4a5568, #2d374ar);
             background-size: 400% 400%;
             animation: gradient 15s ease infinite;
         }
@@ -130,16 +130,23 @@
                         <div>
                             <label for="api-key" class="block text-sm font-medium text-gray-300 mb-1">API Key</label>
                             <div class="flex items-center space-x-2">
-                                <input type="password" id="api-key" class="w-full bg-gray-900 border border-gray-700 rounded-md px-3 py-2 text-white focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500" onkeyup="updateKeyDisplay('api-key', 'api-key-display')">
+                                <input type="password" id="api-key" placeholder="Enter new key to update" class="w-full bg-gray-900 border border-gray-700 rounded-md px-3 py-2 text-white focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500">
                                 <span id="api-key-display" class="bg-gray-700 text-xs font-mono px-2 py-1 rounded">None</span>
                             </div>
                         </div>
                         <div>
                             <label for="backup-api-key" class="block text-sm font-medium text-gray-300 mb-1">Backup API Key (Optional)</label>
                             <div class="flex items-center space-x-2">
-                                <input type="password" id="backup-api-key" class="w-full bg-gray-900 border border-gray-700 rounded-md px-3 py-2 text-white focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500" onkeyup="updateKeyDisplay('backup-api-key', 'backup-api-key-display')">
+                                <input type="password" id="backup-api-key" placeholder="Enter new key to update" class="w-full bg-gray-900 border border-gray-700 rounded-md px-3 py-2 text-white focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500">
                                 <span id="backup-api-key-display" class="bg-gray-700 text-xs font-mono px-2 py-1 rounded">None</span>
                             </div>
+                        </div>
+                        <!-- NEW: Designated Channel -->
+                        <div>
+                            <label for="designated-channel" class="block text-sm font-medium text-gray-300 mb-1">Designated Channel</label>
+                            <select id="designated-channel" class="w-full bg-gray-900 border border-gray-700 rounded-md px-3 py-2 text-white focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500">
+                                <!-- Options will be populated by JavaScript -->
+                            </select>
                         </div>
                     </div>
 
@@ -402,6 +409,7 @@
                 ai_model: document.getElementById('ai-model').value,
                 api_key: document.getElementById('api-key').value,
                 backup_api_key: document.getElementById('backup-api-key').value,
+                designated_channel: document.getElementById('designated-channel').value,
                 custom_name: document.getElementById('custom-name').value,
                 custom_personality: document.getElementById('custom-personality').value
             };
@@ -427,24 +435,71 @@
             }
         }
 
-        function showSettingsForServer(server) {
+        async function showSettingsForServer(server) {
             currentServer = server;
             document.getElementById('settings-server-icon').src = server.icon;
             document.getElementById('settings-server-name').textContent = server.name;
-            document.getElementById('ai-model').value = '';
+            
+            // Show loading state while we fetch data
+            document.getElementById('ai-model').value = 'Loading...';
+            document.getElementById('custom-name').value = 'Loading...';
+            document.getElementById('custom-personality').value = 'Loading...';
+            showPage('server-settings');
+
+            // Fetch existing settings and channels
+            const [settingsRes, channelsRes] = await Promise.all([
+                fetch(`${API_BASE_URL}/api/server-settings/${server.id}`, fetchOptions),
+                fetch(`${API_BASE_URL}/api/server-channels/${server.id}`, fetchOptions)
+            ]);
+
+            // Populate Channels
+            const channelSelect = document.getElementById('designated-channel');
+            channelSelect.innerHTML = '<option value="all">All Channels</option>';
+            if(channelsRes.ok) {
+                const channels = await channelsRes.json();
+                channels.forEach(ch => {
+                    const option = document.createElement('option');
+                    option.value = ch.id;
+                    option.textContent = `# ${ch.name}`;
+                    channelSelect.appendChild(option);
+                });
+            }
+
+            // Populate Settings
+            if (settingsRes.ok) {
+                const savedSettings = await settingsRes.json();
+                document.getElementById('ai-model').value = savedSettings.ai_model || '';
+                document.getElementById('api-key-display').textContent = savedSettings.api_key_last4 ? `...${savedSettings.api_key_last4}` : 'None';
+                document.getElementById('backup-api-key-display').textContent = savedSettings.backup_api_key_last4 ? `...${savedSettings.backup_api_key_last4}` : 'None';
+                channelSelect.value = savedSettings.designated_channel || 'all';
+                document.getElementById('custom-name').value = savedSettings.custom_bot_name || '';
+                document.getElementById('custom-personality').value = savedSettings.custom_personality || '';
+                
+                // Unlock premium if applicable
+                if (savedSettings.user_premium || savedSettings.server_premium) {
+                    premiumOverlay.style.display = 'none';
+                    premiumFields.classList.remove('blur-md', 'pointer-events-none');
+                } else {
+                    premiumOverlay.style.display = 'flex';
+                    premiumFields.classList.add('blur-md', 'pointer-events-none');
+                }
+            } else {
+                // No settings found, so it's a new server setup
+                document.getElementById('ai-model').value = '';
+                document.getElementById('api-key-display').textContent = 'None';
+                document.getElementById('backup-api-key-display').textContent = 'None';
+                channelSelect.value = 'all';
+                document.getElementById('custom-name').value = '';
+                document.getElementById('custom-personality').value = '';
+                premiumOverlay.style.display = 'flex';
+                premiumFields.classList.add('blur-md', 'pointer-events-none');
+            }
+            // Clear password fields for security
             document.getElementById('api-key').value = '';
             document.getElementById('backup-api-key').value = '';
-            document.getElementById('custom-name').value = '';
-            const personalityTextarea = document.getElementById('custom-personality');
-            personalityTextarea.value = '';
-            personalityTextarea.placeholder = "You are Evo. Your persona is that of a sharp-witted and humorous tomboy...";
-            updateKeyDisplay('api-key', 'api-key-display');
-            updateKeyDisplay('backup-api-key', 'backup-api-key-display');
-            premiumOverlay.style.display = 'flex';
-            premiumFields.classList.add('blur-md', 'pointer-events-none');
-            showPage('server-settings');
         }
 
+        // --- UTILITY FUNCTIONS ---
         function updateKeyDisplay(inputId, displayId) {
             const input = document.getElementById(inputId);
             const display = document.getElementById(displayId);
