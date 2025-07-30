@@ -141,7 +141,6 @@
                                 <span id="backup-api-key-display" class="bg-gray-700 text-xs font-mono px-2 py-1 rounded">None</span>
                             </div>
                         </div>
-                        <!-- NEW: Designated Channel -->
                         <div>
                             <label for="designated-channel" class="block text-sm font-medium text-gray-300 mb-1">Designated Channel</label>
                             <select id="designated-channel" class="w-full bg-gray-900 border border-gray-700 rounded-md px-3 py-2 text-white focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500">
@@ -171,14 +170,11 @@
                                 </div>
                             </div>
                             <div id="premium-overlay" class="absolute inset-0 bg-gray-900/80 backdrop-blur-sm flex flex-col items-center justify-center rounded-lg p-6 text-center">
-                                <h3 class="text-2xl font-bold text-indigo-300">Evo Premium</h3>
-                                <ul class="my-4 space-y-2 text-gray-300 list-inside">
-                                    <li>✓ Custom Name</li>
-                                    <li>✓ Custom Personality</li>
-                                    <li>✓ Custom Avatar</li>
-                                </ul>
+                                <!-- NEW: Updated Text -->
+                                <h3 class="text-2xl font-bold text-indigo-300">Premium Features</h3>
+                                <p class="my-4 text-gray-300">This feature may be monetized in the future.</p>
                                 <button id="subscribe-btn" class="mt-4 bg-indigo-600 hover:bg-indigo-500 text-white font-bold py-3 px-8 rounded-full shadow-lg transition-transform transform hover:scale-105">
-                                    Subscribe 2.99€/month
+                                    Unlock for Testing
                                 </button>
                             </div>
                         </div>
@@ -277,6 +273,7 @@
         // --- GLOBAL STATE ---
         let currentServer = null;
         let isUserLoggedIn = false;
+        let botInfo = {};
 
         // --- DOM ELEMENTS ---
         const allPages = document.querySelectorAll('.page-view, #landing-page');
@@ -338,6 +335,16 @@
         // --- API & DYNAMIC RENDERING LOGIC ---
         const fetchOptions = { credentials: 'include' };
 
+        async function fetchBotInfo() {
+            try {
+                const response = await fetch(`${API_BASE_URL}/api/bot-info`);
+                if(response.ok) {
+                    botInfo = await response.json();
+                    document.getElementById('avatar-preview').src = botInfo.avatar || 'https://placehold.co/64x64/4a5568/ffffff?text=Evo';
+                }
+            } catch (e) { console.error("Could not fetch bot info", e); }
+        }
+
         async function updateUserInfo() {
             try {
                 const response = await fetch(`${API_BASE_URL}/api/me`, fetchOptions);
@@ -367,6 +374,7 @@
         }
 
         async function loadAndRenderModalServerList() {
+            modalServerList.innerHTML = `<p class="p-4 text-center text-gray-400">Loading servers...</p>`;
             try {
                 const [userServersRes, availableServersRes] = await Promise.all([
                     fetch(`${API_BASE_URL}/api/user-servers`, fetchOptions),
@@ -387,7 +395,10 @@
                     const item = document.createElement('div');
                     item.className = 'flex items-center p-3 hover:bg-gray-700 rounded-lg cursor-pointer';
                     item.innerHTML = `<img src="${server.icon}" alt="${server.name}" class="w-10 h-10 rounded-full mr-4"><span class="font-semibold">${server.name}</span>`;
-                    item.addEventListener('click', () => showSettingsForServer(server));
+                    item.addEventListener('click', () => {
+                        addServerModal.style.display = 'none';
+                        showSettingsForServer(server);
+                    });
                     modalServerList.appendChild(item);
                 });
             } catch (error) { console.error('Failed to load available servers:', error); }
@@ -440,19 +451,16 @@
             document.getElementById('settings-server-icon').src = server.icon;
             document.getElementById('settings-server-name').textContent = server.name;
             
-            // Show loading state while we fetch data
             document.getElementById('ai-model').value = 'Loading...';
             document.getElementById('custom-name').value = 'Loading...';
             document.getElementById('custom-personality').value = 'Loading...';
             showPage('server-settings');
 
-            // Fetch existing settings and channels
             const [settingsRes, channelsRes] = await Promise.all([
                 fetch(`${API_BASE_URL}/api/server-settings/${server.id}`, fetchOptions),
                 fetch(`${API_BASE_URL}/api/server-channels/${server.id}`, fetchOptions)
             ]);
 
-            // Populate Channels
             const channelSelect = document.getElementById('designated-channel');
             channelSelect.innerHTML = '<option value="all">All Channels</option>';
             if(channelsRes.ok) {
@@ -465,7 +473,6 @@
                 });
             }
 
-            // Populate Settings
             if (settingsRes.ok) {
                 const savedSettings = await settingsRes.json();
                 document.getElementById('ai-model').value = savedSettings.ai_model || '';
@@ -475,7 +482,6 @@
                 document.getElementById('custom-name').value = savedSettings.custom_bot_name || '';
                 document.getElementById('custom-personality').value = savedSettings.custom_personality || '';
                 
-                // Unlock premium if applicable
                 if (savedSettings.user_premium || savedSettings.server_premium) {
                     premiumOverlay.style.display = 'none';
                     premiumFields.classList.remove('blur-md', 'pointer-events-none');
@@ -484,7 +490,6 @@
                     premiumFields.classList.add('blur-md', 'pointer-events-none');
                 }
             } else {
-                // No settings found, so it's a new server setup
                 document.getElementById('ai-model').value = '';
                 document.getElementById('api-key-display').textContent = 'None';
                 document.getElementById('backup-api-key-display').textContent = 'None';
@@ -494,7 +499,6 @@
                 premiumOverlay.style.display = 'flex';
                 premiumFields.classList.add('blur-md', 'pointer-events-none');
             }
-            // Clear password fields for security
             document.getElementById('api-key').value = '';
             document.getElementById('backup-api-key').value = '';
         }
@@ -510,6 +514,7 @@
         
         // --- INITIALIZATION ---
         document.addEventListener('DOMContentLoaded', async () => {
+            await fetchBotInfo(); // Fetch bot info on load
             const urlParams = new URLSearchParams(window.location.search);
             if (urlParams.get('loggedin') === 'true') {
                 history.pushState(null, '', window.location.pathname);
