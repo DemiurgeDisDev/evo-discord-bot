@@ -6,15 +6,17 @@ from requests_oauthlib import OAuth2Session
 
 # Initialize the Flask app
 app = Flask(__name__)
-# Enable CORS to allow our frontend to talk to our backend
-CORS(app, supports_credentials=True) # supports_credentials is needed for sessions
 
 # --- CONFIGURATION FROM ENVIRONMENT VARIABLES ---
-# Load secrets from .env file (or Render's environment variables)
 app.secret_key = os.getenv('FLASK_SECRET_KEY')
 DISCORD_CLIENT_ID = os.getenv('DISCORD_CLIENT_ID')
 DISCORD_CLIENT_SECRET = os.getenv('DISCORD_CLIENT_SECRET')
 DISCORD_REDIRECT_URI = os.getenv('DISCORD_REDIRECT_URI')
+FRONTEND_URL = os.getenv('FRONTEND_URL')
+
+# --- CORS CONFIGURATION (THE FIX) ---
+# This tells the browser that it's okay for our frontend to receive cookies from our backend.
+CORS(app, supports_credentials=True, origins=[FRONTEND_URL])
 
 # Discord API endpoints
 API_BASE_URL = 'https://discord.com/api'
@@ -47,17 +49,14 @@ def home():
 
 @app.route('/login')
 def login():
-    """Redirects the user to Discord's authorization page."""
     scope = ['identify', 'guilds']
     discord = OAuth2Session(DISCORD_CLIENT_ID, redirect_uri=DISCORD_REDIRECT_URI, scope=scope)
     authorization_url, state = discord.authorization_url(AUTHORIZATION_BASE_URL)
-    # THE FIX IS HERE: Added the missing '=' sign
     session['oauth2_state'] = state
     return redirect(authorization_url)
 
 @app.route('/callback')
 def callback():
-    """The user is sent here after authorizing on Discord."""
     discord = OAuth2Session(DISCORD_CLIENT_ID, state=session.get('oauth2_state'), redirect_uri=DISCORD_REDIRECT_URI)
     token = discord.fetch_token(
         TOKEN_URL,
@@ -69,16 +68,19 @@ def callback():
     user_info_response = discord.get(API_BASE_URL + '/users/@me')
     user_info = user_info_response.json()
     session['user'] = user_info
-    print(f"User logged in: {user_info['username']}#{user_info['discriminator']}")
+    print(f"User logged in: {user_info.get('username')}#{user_info.get('discriminator')}")
 
-    # This now reads the live frontend URL from the environment variables you set on Render
-    frontend_url = os.getenv('FRONTEND_URL') 
-    return redirect(f"{frontend_url}/#dashboard")
+    return redirect(f"{FRONTEND_URL}/#dashboard")
+
+# NEW: Proper logout route
+@app.route('/logout')
+def logout():
+    session.clear() # Clears all session data
+    return jsonify({"status": "success", "message": "Logged out"})
 
 
 @app.route('/api/me')
 def get_current_user():
-    """Returns the currently logged-in user's info."""
     user = session.get('user')
     if user:
         return jsonify(user)
@@ -89,14 +91,17 @@ def get_current_user():
 
 @app.route('/api/user-servers', methods=['GET'])
 def get_user_servers():
+    if not session.get('user'): return jsonify({"error": "Not logged in"}), 401
     return jsonify(mock_db["user_servers"])
 
 @app.route('/api/available-servers', methods=['GET'])
 def get_available_servers():
+    if not session.get('user'): return jsonify({"error": "Not logged in"}), 401
     return jsonify(mock_db["available_servers"])
 
 @app.route('/api/add-server', methods=['POST'])
 def add_server():
+    if not session.get('user'): return jsonify({"error": "Not logged in"}), 401
     data = request.json
     server_id = data.get('id')
     server_name = data.get('name')
@@ -111,6 +116,7 @@ def add_server():
 
 @app.route('/api/remove-server/<server_id>', methods=['DELETE'])
 def remove_server(server_id):
+    if not session.get('user'): return jsonify({"error": "Not logged in"}), 401
     initial_len = len(mock_db['user_servers'])
     mock_db['user_servers'] = [s for s in mock_db['user_servers'] if s['id'] != server_id]
     if len(mock_db['user_servers']) < initial_len:
@@ -120,6 +126,7 @@ def remove_server(server_id):
 
 @app.route('/api/server-settings/<server_id>', methods=['POST'])
 def save_server_settings(server_id):
+    if not session.get('user'): return jsonify({"error": "Not logged in"}), 401
     settings = request.json
     print(f"Received settings for server {server_id}: {settings}")
     return jsonify({"status": "success", "message": f"Settings for server {server_id} received."})
