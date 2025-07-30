@@ -73,7 +73,6 @@ def get_user_guilds(token):
 def home():
     return jsonify({"status": "online", "message": "Evo Backend is running successfully!"})
 
-# NEW: Route to get the bot's own info
 @app.route('/api/bot-info')
 def get_bot_info():
     if not BOT_TOKEN: return jsonify({"error": "Bot token not configured"}), 500
@@ -86,7 +85,6 @@ def get_bot_info():
         if avatar_hash:
             avatar_url = f"https://cdn.discordapp.com/avatars/{bot_id}/{avatar_hash}.png"
         else:
-            # Default avatar if none is set
             avatar_url = "https://cdn.discordapp.com/embed/avatars/0.png"
         return jsonify({"avatar": avatar_url})
     return jsonify({"error": "Failed to fetch bot info"}), 500
@@ -145,15 +143,25 @@ def get_user_servers():
 
 @app.route('/api/available-servers', methods=['GET'])
 def get_available_servers():
+    """Returns a list of servers the user is an admin of THAT ARE NOT YET CONFIGURED."""
     if not session.get('user'): return jsonify({"error": "Not logged in"}), 401
+    if not db: return jsonify({"error": "Database not connected"}), 500
+    
     user_guilds = get_user_guilds(session.get('discord_token'))
-    admin_guilds = []
+    
+    # Get IDs of servers already configured
+    configs_ref = db.collection('server_configs').stream()
+    configured_guild_ids = {config.id for config in configs_ref}
+    
+    available_guilds = []
     for guild in user_guilds:
-        if (int(guild['permissions']) & 0x8) == 0x8: # Check for Administrator permission
+        # Check for Admin permission AND that it's not already configured
+        if (int(guild['permissions']) & 0x8) == 0x8 and guild['id'] not in configured_guild_ids:
             icon_hash = guild.get('icon')
             icon_url = f"https://cdn.discordapp.com/icons/{guild['id']}/{icon_hash}.png" if icon_hash else f"https://placehold.co/64x64/7f9cf5/ffffff?text={guild.get('name', '?')[0]}"
-            admin_guilds.append({"id": guild['id'], "name": guild['name'], "icon": icon_url})
-    return jsonify(admin_guilds)
+            available_guilds.append({"id": guild['id'], "name": guild['name'], "icon": icon_url})
+            
+    return jsonify(available_guilds)
 
 @app.route('/api/remove-server/<server_id>', methods=['DELETE'])
 def remove_server(server_id):
