@@ -14,8 +14,7 @@ DISCORD_CLIENT_SECRET = os.getenv('DISCORD_CLIENT_SECRET')
 DISCORD_REDIRECT_URI = os.getenv('DISCORD_REDIRECT_URI')
 FRONTEND_URL = os.getenv('FRONTEND_URL')
 
-# --- CORS CONFIGURATION (THE FIX) ---
-# This tells the browser that it's okay for our frontend to receive cookies from our backend.
+# --- CORS CONFIGURATION ---
 CORS(app, supports_credentials=True, origins=[FRONTEND_URL])
 
 # Discord API endpoints
@@ -70,12 +69,12 @@ def callback():
     session['user'] = user_info
     print(f"User logged in: {user_info.get('username')}#{user_info.get('discriminator')}")
 
-    return redirect(f"{FRONTEND_URL}/#dashboard")
+    # THE FIX IS HERE: Using a query parameter instead of a hash
+    return redirect(f"{FRONTEND_URL}/?loggedin=true")
 
-# NEW: Proper logout route
 @app.route('/logout')
 def logout():
-    session.clear() # Clears all session data
+    session.clear()
     return jsonify({"status": "success", "message": "Logged out"})
 
 
