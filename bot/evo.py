@@ -180,20 +180,26 @@ async def on_message(message):
                 return
 
             # --- Action and Learning Phase ---
+            
+            # Clean the response for the user-facing message, removing the "AI:" prefix if it exists.
+            reply_to_user = ai_response_text
+            if reply_to_user.lower().strip().startswith('ai:'):
+                reply_to_user = reply_to_user.strip()[3:].lstrip()
+
             # 1. Send the Reply
             custom_avatar_url = server_config.get('custom_avatar_url')
             if custom_avatar_url:
                 webhook = await get_or_create_webhook(message.channel)
                 await webhook.send(
-                    content=ai_response_text,
+                    content=reply_to_user, # Use the cleaned version
                     username=server_config.get('custom_bot_name', bot.user.name),
                     avatar_url=custom_avatar_url
                 )
             else:
-                await message.reply(ai_response_text)
+                await message.reply(reply_to_user) # Use the cleaned version
 
             # 2. Update Memories (Learning)
-            # Add the new exchange to history
+            # Add the new exchange to history, using the ORIGINAL uncleaned version for the AI's context.
             new_history = conversation_history + [f"User: {message.clean_content}\n", f"AI: {ai_response_text}\n"]
             # Keep only the last 10 items (5 exchanges)
             memory_ref.set({
