@@ -505,7 +505,7 @@
         function updateKeyDisplay(inputId, displayId) {
             const input = document.getElementById(inputId);
             const display = document.getElementById(displayId);
-            if (input..length > 4) display.textContent = '...' + input.value.slice(-4);
+            if (input.value.length > 4) display.textContent = '...' + input.value.slice(-4);
             else if (input.value.length > 0) display.textContent = '...';
             else display.textContent = 'None';
         }
