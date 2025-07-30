@@ -31,6 +31,7 @@ try:
         cred_json = json.loads(os.environ.get('FIREBASE_CREDENTIALS_JSON'))
         cred = credentials.Certificate(cred_json)
     else:
+        # This will use the GOOGLE_APPLICATION_CREDENTIALS file path
         cred = credentials.ApplicationDefault()
         
     firebase_admin.initialize_app(cred)
@@ -63,6 +64,7 @@ def decrypt_key(encrypted_key):
     return cipher_suite.decrypt(encrypted_key.encode()).decode()
 
 def get_user_guilds(token):
+    """Fetches the user's guilds from the Discord API."""
     discord = OAuth2Session(DISCORD_CLIENT_ID, token=token)
     response = discord.get(API_BASE_URL + '/users/@me/guilds')
     return response.json() if response.status_code == 200 else []
@@ -130,7 +132,7 @@ def get_available_servers():
     user_guilds = get_user_guilds(session.get('discord_token'))
     admin_guilds = []
     for guild in user_guilds:
-        if (int(guild['permissions']) & 0x8) == 0x8:
+        if (int(guild['permissions']) & 0x8) == 0x8: # Check for Administrator permission
             icon_hash = guild.get('icon')
             icon_url = f"https://cdn.discordapp.com/icons/{guild['id']}/{icon_hash}.png" if icon_hash else f"https://placehold.co/64x64/7f9cf5/ffffff?text={guild.get('name', '?')[0]}"
             admin_guilds.append({"id": guild['id'], "name": guild['name'], "icon": icon_url})
@@ -182,8 +184,8 @@ def get_server_settings(server_id):
         data["api_key_last4"] = api_key[-4:] if api_key else ""
         data["backup_api_key_last4"] = backup_key[-4:] if backup_key else ""
         # Remove encrypted keys before sending to frontend
-        del data["encrypted_api_key"]
-        del data["encrypted_backup_api_key"]
+        if "encrypted_api_key" in data: del data["encrypted_api_key"]
+        if "encrypted_backup_api_key" in data: del data["encrypted_backup_api_key"]
         return jsonify(data)
     else:
         return jsonify({"error": "No settings found for this server."}), 404
@@ -198,17 +200,19 @@ def save_server_settings(server_id):
     server_ref = db.collection('server_configs').document(server_id)
     doc = server_ref.get()
 
-    # Encrypt API keys if they were provided (if user leaves them blank, don't overwrite)
-    update_data = {}
+    # Prepare data for Firestore
+    update_data = {
+        "ai_model": settings.get('ai_model'),
+        "designated_channel": settings.get('designated_channel')
+    }
+
+    # Only update keys if a new value was provided
     if settings.get('api_key'):
         update_data["encrypted_api_key"] = encrypt_key(settings.get('api_key'))
     if settings.get('backup_api_key'):
         update_data["encrypted_backup_api_key"] = encrypt_key(settings.get('backup_api_key'))
-
-    # Add other fields
-    update_data["ai_model"] = settings.get('ai_model')
-    update_data["designated_channel"] = settings.get('designated_channel')
     
+    # In the future, we'd check if the user is premium before saving these
     if 'custom_name' in settings and settings.get('custom_name'):
         update_data['custom_bot_name'] = settings.get('custom_name')
     if 'custom_personality' in settings and settings.get('custom_personality'):
@@ -224,6 +228,7 @@ def save_server_settings(server_id):
         print(f"Updating config for server {server_id}")
         server_ref.update(update_data)
     
+    print(f"Saved settings for server {server_id}")
     return jsonify({"status": "success", "message": f"Settings for server {server_id} saved."})
 
 # This part allows us to run the app.
