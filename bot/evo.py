@@ -12,8 +12,6 @@ import google.generativeai as genai
 # ==================================================================================
 
 # --- Load Secrets ---
-# In production on Render, these are loaded from Environment Variables.
-# For local testing, you can use a .env file (make sure it's in your .gitignore).
 from dotenv import load_dotenv
 load_dotenv()
 
@@ -27,7 +25,6 @@ if not all([DISCORD_BOT_TOKEN, ENCRYPTION_KEY, FIREBASE_CREDENTIALS_JSON]):
 cipher_suite = Fernet(ENCRYPTION_KEY.encode())
 
 # --- Initialize Services ---
-# Initialize Firebase
 try:
     cred_json = json.loads(FIREBASE_CREDENTIALS_JSON)
     cred = credentials.Certificate(cred_json)
@@ -38,9 +35,7 @@ except Exception as e:
     print(f"FATAL: Could not connect to Firebase: {e}")
     exit()
 
-# Load Default Personality
 try:
-    # The path is now relative to the /bot directory where the script runs
     with open('personality.json', 'r') as f:
         DEFAULT_PERSONALITY = json.load(f)
     print("Default personality.json loaded.")
@@ -52,7 +47,7 @@ except FileNotFoundError:
 intents = discord.Intents.default()
 intents.message_content = True
 intents.guilds = True
-intents.members = True # Required to get member info for webhooks
+intents.members = True
 
 bot = discord.Client(intents=intents)
 
@@ -61,20 +56,72 @@ bot = discord.Client(intents=intents)
 # ==================================================================================
 
 def decrypt_key(encrypted_key):
-    if not encrypted_key:
-        return ""
-    try:
-        return cipher_suite.decrypt(encrypted_key.encode()).decode()
-    except Exception:
-        return "" # Return empty if decryption fails
+    if not encrypted_key: return ""
+    try: return cipher_suite.decrypt(encrypted_key.encode()).decode()
+    except Exception: return ""
 
 async def get_or_create_webhook(channel):
-    """Gets an existing webhook or creates a new one for the bot."""
     webhooks = await channel.webhooks()
     for webhook in webhooks:
         if webhook.user == bot.user:
             return webhook
     return await channel.create_webhook(name=f"{bot.user.name}'s Webhook")
+
+async def update_summaries(model, memory_ref, user_name, conversation_exchange, old_personal_summary, old_gossip_summary):
+    """
+    After a conversation, this function asks the AI to reflect on the exchange
+    and update its summaries about the user.
+    """
+    print(f"Starting reflection for user: {user_name}")
+    try:
+        # --- Update Personal Summary ---
+        personal_summary_prompt = f"""
+        You are a memory assistant. Your job is to update a user summary based on a new conversation.
+        The user's name is {user_name}.
+        Here is the old summary of the user:
+        ---
+        {old_personal_summary}
+        ---
+        Here is the latest conversation exchange:
+        ---
+        {conversation_exchange}
+        ---
+        Based on this new information, provide an updated summary of the user. The summary should be a concise paragraph, written in the third person.
+        Keep the summary under 200 words. If no new important personal information was learned, just return the original summary.
+        """
+        
+        personal_response = await model.generate_content_async(personal_summary_prompt)
+        new_personal_summary = personal_response.text
+
+        # --- Update Gossip Summary ---
+        # This is a simplified version. A more complex one would parse mentioned users.
+        gossip_summary_prompt = f"""
+        You are a memory assistant. Your job is to update a "gossip" summary based on a new conversation.
+        The user's name is {user_name}.
+        Here is the old gossip summary about the user (things they've said about others, or general noteworthy comments):
+        ---
+        {old_gossip_summary}
+        ---
+        Here is the latest conversation exchange:
+        ---
+        {conversation_exchange}
+        ---
+        Based on this new information, provide an updated gossip summary. The summary should be a concise paragraph.
+        Keep the summary under 200 words. If no new important gossip was learned, just return the original summary.
+        """
+        gossip_response = await model.generate_content_async(gossip_summary_prompt)
+        new_gossip_summary = gossip_response.text
+
+        # Save the updated summaries to Firebase
+        await asyncio.to_thread(
+            memory_ref.set,
+            {'personal_summary': new_personal_summary, 'gossip_summary': new_gossip_summary},
+            merge=True
+        )
+        print(f"Successfully updated summaries for {user_name}.")
+
+    except Exception as e:
+        print(f"Could not update summaries for {user_name}. Error: {e}")
 
 # ==================================================================================
 # 3. DISCORD EVENTS
@@ -82,49 +129,33 @@ async def get_or_create_webhook(channel):
 
 @bot.event
 async def on_ready():
-    """Announce Readiness and Sync Commands."""
     print(f'Evo is online! Logged in as {bot.user}')
-    # In a real application, you would sync slash commands here.
-    # For now, we'll just print a message.
     print("Slash command syncing would happen here.")
 
 @bot.event
 async def on_message(message):
-    """The Main Loop: Listening for and processing messages."""
-    
-    # --- The Filtering Funnel ---
-    # 1. Is the message from me?
-    if message.author == bot.user:
-        return
+    if message.author == bot.user: return
 
-    # Fetch server configuration first, as it's needed for filtering.
     server_id = str(message.guild.id)
     server_ref = db.collection('server_configs').document(server_id)
     server_doc = server_ref.get()
     
-    if not server_doc.exists:
-        return # Server is not configured at all.
+    if not server_doc.exists: return
 
     server_config = server_doc.to_dict()
     bot_name = server_config.get('custom_bot_name', DEFAULT_PERSONALITY.get('name', 'Evo')).lower()
 
-    # 2. Am I being spoken to?
     is_reply = message.reference and message.reference.resolved and message.reference.resolved.author == bot.user
     is_mentioned = bot.user.mentioned_in(message)
     is_name_called = bot_name in message.content.lower()
 
-    if not (is_reply or is_mentioned or is_name_called):
-        return
+    if not (is_reply or is_mentioned or is_name_called): return
 
-    # 3. Is this server configured for this channel?
     designated_channel = server_config.get('designated_channel')
-    if designated_channel and designated_channel != 'all' and designated_channel != str(message.channel.id):
-        return
+    if designated_channel and designated_channel != 'all' and designated_channel != str(message.channel.id): return
 
-    # --- The Thinking Process ---
     async with message.channel.typing():
         try:
-            # 1. Fetch User Memories
             user_id = str(message.author.id)
             memory_ref = db.collection('memories').document(server_id).collection('users').document(user_id)
             memory_doc = memory_ref.get()
@@ -134,35 +165,28 @@ async def on_message(message):
             personal_summary = user_memory.get('personal_summary', 'No summary available.')
             gossip_summary = user_memory.get('gossip_summary', 'No gossip available.')
 
-            # 2. Determine Personality
             final_personality = server_config.get('custom_personality') or DEFAULT_PERSONALITY.get('system_prompt_components', {}).get('personality')
             rules = "\n".join(DEFAULT_PERSONALITY.get('system_prompt_components', {}).get('rules', []))
             system_instruction = f"{final_personality}\n\n{rules}"
             
-            # 3. Build the Final Prompt
-            # For simplicity, we'll build a basic prompt for now. A more complex one would structure the memories.
             prompt = f"""
             Here is a summary of what you know about the user '{message.author.display_name}':
             {personal_summary}
-
             Here is some gossip you've heard about them:
             {gossip_summary}
-
             Recent conversation history (user messages are prefixed with 'User:', your responses with 'AI:'):
             {''.join(conversation_history)}
-
             Now, respond to this new message from the user:
             User: {message.clean_content}
             """
 
-            # 4. Talk to the AI
             api_key = decrypt_key(server_config.get('encrypted_api_key', ''))
             backup_api_key = decrypt_key(server_config.get('encrypted_backup_api_key', ''))
             ai_response_text = None
+            model = None
 
             for key in [api_key, backup_api_key]:
-                if not key:
-                    continue
+                if not key: continue
                 try:
                     genai.configure(api_key=key)
                     model = genai.GenerativeModel(
@@ -171,7 +195,7 @@ async def on_message(message):
                     )
                     response = await model.generate_content_async(prompt)
                     ai_response_text = response.text
-                    break # Success, so break the loop
+                    break
                 except Exception as e:
                     print(f"AI API call failed with a key. Trying next one. Error: {e}")
             
@@ -179,38 +203,34 @@ async def on_message(message):
                 await message.reply("I'm having trouble connecting to my brain right now. Please check my API key configuration on the website.")
                 return
 
-            # --- Action and Learning Phase ---
-            
-            # Clean the response for the user-facing message, removing the "AI:" prefix if it exists.
             reply_to_user = ai_response_text
             if reply_to_user.lower().strip().startswith('ai:'):
                 reply_to_user = reply_to_user.strip()[3:].lstrip()
 
-            # 1. Send the Reply
             custom_avatar_url = server_config.get('custom_avatar_url')
             if custom_avatar_url:
                 webhook = await get_or_create_webhook(message.channel)
                 await webhook.send(
-                    content=reply_to_user, # Use the cleaned version
+                    content=reply_to_user,
                     username=server_config.get('custom_bot_name', bot.user.name),
                     avatar_url=custom_avatar_url
                 )
             else:
-                await message.reply(reply_to_user) # Use the cleaned version
+                await message.reply(reply_to_user)
 
-            # 2. Update Memories (Learning)
-            # Add the new exchange to history, using the ORIGINAL uncleaned version for the AI's context.
-            new_history = conversation_history + [f"User: {message.clean_content}\n", f"AI: {ai_response_text}\n"]
-            # Keep only the last 10 items (5 exchanges)
-            memory_ref.set({
-                'conversation_history': new_history[-10:]
-            }, merge=True)
-
-            # Perform reflection calls (simplified for this version)
-            # In a full implementation, you would make two more API calls here to update summaries.
-            print("Reflection and summary update would happen here.")
+            # --- Learning Phase ---
+            latest_exchange = f"User: {message.clean_content}\nAI: {ai_response_text}\n"
+            new_history = conversation_history + [latest_exchange]
             
-            # 3. Update Server Nickname if needed
+            await asyncio.to_thread(
+                memory_ref.set,
+                {'conversation_history': new_history[-10:]},
+                merge=True
+            )
+            
+            if model: # Ensure we have a working model before trying to reflect
+                await update_summaries(model, memory_ref, message.author.display_name, latest_exchange, personal_summary, gossip_summary)
+            
             new_name = server_config.get('custom_bot_name')
             if new_name and message.guild.me.nick != new_name:
                 try:
@@ -218,11 +238,9 @@ async def on_message(message):
                 except discord.Forbidden:
                     print(f"Could not change nickname on server {server_id}. Missing permissions.")
 
-
         except Exception as e:
             print(f"An unexpected error occurred in on_message: {e}")
             await message.reply("Something went very wrong while I was thinking. My apologies!")
-
 
 # ==================================================================================
 # 4. RUN THE BOT
