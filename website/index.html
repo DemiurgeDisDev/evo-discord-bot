@@ -111,15 +111,23 @@
                             <label for="ai-model" class="block text-sm font-medium text-gray-300 mb-1">AI Model Name</label>
                             <div class="flex items-center space-x-2">
                                 <input type="text" id="ai-model" placeholder="gemini-2.5-flash-lite" class="w-full bg-gray-900 border border-gray-700 rounded-md px-3 py-2 text-white focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500">
-                                <!-- NEW: Use Recommended Button -->
                                 <button id="use-recommended-model-btn" class="text-xs bg-indigo-600 hover:bg-indigo-500 text-white font-semibold py-2 px-3 rounded-md whitespace-nowrap">Use Recommended</button>
                                 <div class="tooltip">
                                     <svg class="w-6 h-6 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
-                                    <!-- NEW: Updated Tooltip Text -->
                                     <span class="tooltiptext">gemini-2.5-flash-lite is a recommended model by Evo developers for its balance of speed and intelligence.</span>
                                 </div>
                             </div>
                         </div>
+
+                        <!-- NEW: Create API Key Section -->
+                        <div class="bg-gray-900/50 border border-gray-700 rounded-lg p-4 flex flex-col sm:flex-row items-center justify-between gap-4">
+                            <p class="text-sm text-gray-300 text-center sm:text-left">Don't have your own API key? Create a free one in Google AI Studio.</p>
+                            <a href="https://aistudio.google.com/apikey" target="_blank" rel="noopener noreferrer" class="flex-shrink-0 bg-green-600 hover:bg-green-500 text-white font-bold py-2 px-4 rounded-lg text-sm flex items-center gap-2">
+                                <svg class="w-4 h-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15" /></svg>
+                                Create API Key
+                            </a>
+                        </div>
+
                         <div>
                             <label for="api-key" class="block text-sm font-medium text-gray-300 mb-1">API Key</label>
                             <div class="flex items-center space-x-2">
@@ -429,7 +437,7 @@
             document.getElementById('api-key').value = '';
             document.getElementById('backup-api-key').value = '';
             document.getElementById('custom-name').value = '';
-_            const personalityTextarea = document.getElementById('custom-personality');
+            const personalityTextarea = document.getElementById('custom-personality');
             personalityTextarea.value = '';
             personalityTextarea.placeholder = "You are Evo. Your persona is that of a sharp-witted and humorous tomboy...";
 
@@ -468,4 +476,5 @@ _            const personalityTextarea = document.getElementById('custom-persona
     </script>
 </body>
 </html>
+
 
