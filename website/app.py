@@ -17,6 +17,7 @@ DISCORD_CLIENT_SECRET = os.getenv('DISCORD_CLIENT_SECRET')
 DISCORD_REDIRECT_URI = os.getenv('DISCORD_REDIRECT_URI')
 FRONTEND_URL = os.getenv('FRONTEND_URL')
 ENCRYPTION_KEY = os.getenv('ENCRYPTION_KEY')
+BOT_TOKEN = os.getenv('BOT_TOKEN') # Bot needs its own token to fetch channels
 
 # Ensure encryption key is loaded
 if not ENCRYPTION_KEY:
@@ -64,9 +65,7 @@ def decrypt_key(encrypted_key):
 def get_user_guilds(token):
     discord = OAuth2Session(DISCORD_CLIENT_ID, token=token)
     response = discord.get(API_BASE_URL + '/users/@me/guilds')
-    if response.status_code == 200:
-        return response.json()
-    return []
+    return response.json() if response.status_code == 200 else []
 
 # --- API ROUTES ---
 
@@ -86,11 +85,7 @@ def login():
 @app.route('/callback')
 def callback():
     discord = OAuth2Session(DISCORD_CLIENT_ID, state=session.get('oauth2_state'), redirect_uri=DISCORD_REDIRECT_URI)
-    token = discord.fetch_token(
-        TOKEN_URL,
-        client_secret=DISCORD_CLIENT_SECRET,
-        authorization_response=request.url,
-    )
+    token = discord.fetch_token(TOKEN_URL, client_secret=DISCORD_CLIENT_SECRET, authorization_response=request.url)
     session['discord_token'] = token
     user_info_response = discord.get(API_BASE_URL + '/users/@me')
     user_info = user_info_response.json()
@@ -105,8 +100,7 @@ def logout():
 @app.route('/api/me')
 def get_current_user():
     user = session.get('user')
-    if user:
-        return jsonify(user)
+    if user: return jsonify(user)
     return jsonify({"error": "Not logged in"}), 401
 
 # --- LIVE DATA API ROUTES ---
@@ -127,94 +121,109 @@ def get_user_servers():
             if matching_guild:
                 icon_hash = matching_guild.get('icon')
                 icon_url = f"https://cdn.discordapp.com/icons/{config.id}/{icon_hash}.png" if icon_hash else f"https://placehold.co/64x64/7f9cf5/ffffff?text={matching_guild.get('name', '?')[0]}"
-                user_admin_configs.append({
-                    "id": config.id,
-                    "name": matching_guild.get('name'),
-                    "icon": icon_url
-                })
+                user_admin_configs.append({"id": config.id, "name": matching_guild.get('name'), "icon": icon_url})
     return jsonify(user_admin_configs)
 
 @app.route('/api/available-servers', methods=['GET'])
 def get_available_servers():
     if not session.get('user'): return jsonify({"error": "Not logged in"}), 401
-    
     user_guilds = get_user_guilds(session.get('discord_token'))
     admin_guilds = []
     for guild in user_guilds:
         if (int(guild['permissions']) & 0x8) == 0x8:
             icon_hash = guild.get('icon')
             icon_url = f"https://cdn.discordapp.com/icons/{guild['id']}/{icon_hash}.png" if icon_hash else f"https://placehold.co/64x64/7f9cf5/ffffff?text={guild.get('name', '?')[0]}"
-            admin_guilds.append({
-                "id": guild['id'],
-                "name": guild['name'],
-                "icon": icon_url
-            })
+            admin_guilds.append({"id": guild['id'], "name": guild['name'], "icon": icon_url})
     return jsonify(admin_guilds)
 
 @app.route('/api/remove-server/<server_id>', methods=['DELETE'])
 def remove_server(server_id):
-    """Deletes a server's config from Firebase."""
     if not session.get('user'): return jsonify({"error": "Not logged in"}), 401
     if not db: return jsonify({"error": "Database not connected"}), 500
-    
     try:
         db.collection('server_configs').document(server_id).delete()
-        # In a real app, you'd also delete the memories for this server
         print(f"Removed server config: {server_id}")
-        return jsonify({"status": "success", "message": f"Server {server_id} removed."})
+        return jsonify({"status": "success"})
     except Exception as e:
-        print(f"Error removing server {server_id}: {e}")
         return jsonify({"error": "Failed to remove server"}), 500
+
+# NEW: Get the channels for a specific server
+@app.route('/api/server-channels/<server_id>', methods=['GET'])
+def get_server_channels(server_id):
+    if not session.get('user'): return jsonify({"error": "Not logged in"}), 401
+    if not BOT_TOKEN: return jsonify({"error": "Bot token not configured"}), 500
+
+    headers = {"Authorization": f"Bot {BOT_TOKEN}"}
+    response = requests.get(f"{API_BASE_URL}/guilds/{server_id}/channels", headers=headers)
+    
+    if response.status_code == 200:
+        all_channels = response.json()
+        # Filter for text channels only (type 0)
+        text_channels = [{"id": ch["id"], "name": ch["name"]} for ch in all_channels if ch["type"] == 0]
+        return jsonify(text_channels)
+    else:
+        print(f"Failed to fetch channels for {server_id}: {response.status_code} {response.text}")
+        return jsonify({"error": "Failed to fetch channels. Is the bot on this server?"}), response.status_code
+
+# NEW: Get the saved settings for a server
+@app.route('/api/server-settings/<server_id>', methods=['GET'])
+def get_server_settings(server_id):
+    if not session.get('user'): return jsonify({"error": "Not logged in"}), 401
+    if not db: return jsonify({"error": "Database not connected"}), 500
+
+    doc_ref = db.collection('server_configs').document(server_id)
+    doc = doc_ref.get()
+
+    if doc.exists:
+        data = doc.to_dict()
+        # Decrypt keys and only return the last 4 characters for security
+        api_key = decrypt_key(data.get("encrypted_api_key", ""))
+        backup_key = decrypt_key(data.get("encrypted_backup_api_key", ""))
+        data["api_key_last4"] = api_key[-4:] if api_key else ""
+        data["backup_api_key_last4"] = backup_key[-4:] if backup_key else ""
+        # Remove encrypted keys before sending to frontend
+        del data["encrypted_api_key"]
+        del data["encrypted_backup_api_key"]
+        return jsonify(data)
+    else:
+        return jsonify({"error": "No settings found for this server."}), 404
+
 
 @app.route('/api/server-settings/<server_id>', methods=['POST'])
 def save_server_settings(server_id):
-    """Creates or updates settings for a server in Firebase."""
     if not session.get('user'): return jsonify({"error": "Not logged in"}), 401
     if not db: return jsonify({"error": "Database not connected"}), 500
 
     settings = request.json
-    
-    encrypted_key = encrypt_key(settings.get('api_key', ''))
-    encrypted_backup_key = encrypt_key(settings.get('backup_api_key', ''))
-
-    # Check if a document for this server already exists
     server_ref = db.collection('server_configs').document(server_id)
     doc = server_ref.get()
 
+    # Encrypt API keys if they were provided (if user leaves them blank, don't overwrite)
+    update_data = {}
+    if settings.get('api_key'):
+        update_data["encrypted_api_key"] = encrypt_key(settings.get('api_key'))
+    if settings.get('backup_api_key'):
+        update_data["encrypted_backup_api_key"] = encrypt_key(settings.get('backup_api_key'))
+
+    # Add other fields
+    update_data["ai_model"] = settings.get('ai_model')
+    update_data["designated_channel"] = settings.get('designated_channel')
+    
+    if 'custom_name' in settings and settings.get('custom_name'):
+        update_data['custom_bot_name'] = settings.get('custom_name')
+    if 'custom_personality' in settings and settings.get('custom_personality'):
+        update_data['custom_personality'] = settings.get('custom_personality')
+
     if not doc.exists:
-        # Document does not exist, so we create it with defaults
         print(f"Creating new config for server {server_id}")
-        new_config = {
-            "server_name": settings.get('server_name'), # Sent from frontend now
-            "ai_model": settings.get('ai_model'),
-            "encrypted_api_key": encrypted_key,
-            "encrypted_backup_api_key": encrypted_backup_key,
-            "user_premium": False, # Default value
-            "server_premium": False # Default value
-        }
-        # Add premium fields if they exist
-        if 'custom_name' in settings and settings.get('custom_name'):
-            new_config['custom_bot_name'] = settings.get('custom_name')
-        if 'custom_personality' in settings and settings.get('custom_personality'):
-            new_config['custom_personality'] = settings.get('custom_personality')
-        
-        server_ref.set(new_config)
+        update_data["server_name"] = settings.get('server_name')
+        update_data["user_premium"] = False
+        update_data["server_premium"] = False
+        server_ref.set(update_data)
     else:
-        # Document exists, so we update it
         print(f"Updating config for server {server_id}")
-        update_data = {
-            "ai_model": settings.get('ai_model'),
-            "encrypted_api_key": encrypted_key,
-            "encrypted_backup_api_key": encrypted_backup_key,
-        }
-        if 'custom_name' in settings and settings.get('custom_name'):
-            update_data['custom_bot_name'] = settings.get('custom_name')
-        if 'custom_personality' in settings and settings.get('custom_personality'):
-            update_data['custom_personality'] = settings.get('custom_personality')
-        
         server_ref.update(update_data)
     
-    print(f"Saved settings for server {server_id}")
     return jsonify({"status": "success", "message": f"Settings for server {server_id} saved."})
 
 # This part allows us to run the app.
