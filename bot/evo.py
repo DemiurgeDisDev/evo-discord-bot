@@ -40,11 +40,12 @@ except Exception as e:
 
 # Load Default Personality
 try:
-    with open('bot/personality.json', 'r') as f:
+    # The path is now relative to the /bot directory where the script runs
+    with open('personality.json', 'r') as f:
         DEFAULT_PERSONALITY = json.load(f)
     print("Default personality.json loaded.")
 except FileNotFoundError:
-    print("FATAL: bot/personality.json not found. The bot needs its base personality to function.")
+    print("FATAL: personality.json not found. The bot needs its base personality to function.")
     exit()
 
 # --- Connect to Discord ---
@@ -222,4 +223,3 @@ async def on_message(message):
 # ==================================================================================
 if __name__ == "__main__":
     bot.run(DISCORD_BOT_TOKEN)
-
