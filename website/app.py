@@ -25,8 +25,17 @@ cipher_suite = Fernet(ENCRYPTION_KEY.encode())
 
 # --- FIREBASE INITIALIZATION ---
 # This uses the GOOGLE_APPLICATION_CREDENTIALS environment variable automatically
+# if it's set to the path of your credentials file (for local testing),
+# or the FIREBASE_CREDENTIALS_JSON variable on Render.
 try:
-    cred = credentials.ApplicationDefault()
+    if 'FIREBASE_CREDENTIALS_JSON' in os.environ:
+        import json
+        cred_json = json.loads(os.environ.get('FIREBASE_CREDENTIALS_JSON'))
+        cred = credentials.Certificate(cred_json)
+    else:
+        # This will use the GOOGLE_APPLICATION_CREDENTIALS file path
+        cred = credentials.ApplicationDefault()
+        
     firebase_admin.initialize_app(cred)
     db = firestore.client()
     print("Successfully connected to Firebase.")
@@ -34,10 +43,8 @@ except Exception as e:
     print(f"Could not connect to Firebase: {e}")
     db = None
 
-# --- CORS CONFIGURATION ---
+# --- CORS & SESSION CONFIGURATION ---
 CORS(app, supports_credentials=True, origins=[FRONTEND_URL])
-
-# --- SESSION COOKIE CONFIGURATION ---
 app.config.update(
     SESSION_COOKIE_SECURE=True,
     SESSION_COOKIE_HTTPONLY=True,
@@ -51,15 +58,11 @@ TOKEN_URL = 'https://discord.com/api/oauth2/token'
 
 # --- HELPER FUNCTIONS ---
 def encrypt_key(key):
-    """Encrypts an API key."""
-    if not key:
-        return ""
+    if not key: return ""
     return cipher_suite.encrypt(key.encode()).decode()
 
 def decrypt_key(encrypted_key):
-    """Decrypts an API key."""
-    if not encrypted_key:
-        return ""
+    if not encrypted_key: return ""
     return cipher_suite.decrypt(encrypted_key.encode()).decode()
 
 def get_user_guilds(token):
@@ -119,29 +122,22 @@ def get_user_servers():
     if not session.get('user'): return jsonify({"error": "Not logged in"}), 401
     if not db: return jsonify({"error": "Database not connected"}), 500
     
-    user_id = session['user']['id']
     user_guilds = get_user_guilds(session.get('discord_token'))
     admin_guild_ids = {g['id'] for g in user_guilds if (int(g['permissions']) & 0x8) == 0x8}
 
-    # Fetch all server configs from Firestore
     configs_ref = db.collection('server_configs').stream()
-    
-    # Filter to only include servers where the current user is an admin
     user_admin_configs = []
     for config in configs_ref:
         if config.id in admin_guild_ids:
-            server_data = config.to_dict()
-            # Find the matching guild from the API call to get the icon and name
             matching_guild = next((g for g in user_guilds if g['id'] == config.id), None)
             if matching_guild:
                 icon_hash = matching_guild.get('icon')
-                icon_url = f"https://cdn.discordapp.com/icons/{config.id}/{icon_hash}.png" if icon_hash else "https://placehold.co/64x64/7f9cf5/ffffff?text=?"
+                icon_url = f"https://cdn.discordapp.com/icons/{config.id}/{icon_hash}.png" if icon_hash else f"https://placehold.co/64x64/7f9cf5/ffffff?text={matching_guild.get('name', '?')[0]}"
                 user_admin_configs.append({
                     "id": config.id,
                     "name": matching_guild.get('name'),
                     "icon": icon_url
                 })
-
     return jsonify(user_admin_configs)
 
 @app.route('/api/available-servers', methods=['GET'])
@@ -152,10 +148,9 @@ def get_available_servers():
     user_guilds = get_user_guilds(session.get('discord_token'))
     admin_guilds = []
     for guild in user_guilds:
-        # Check for Administrator permission (0x8)
-        if (int(guild['permissions']) & 0x8) == 0x8:
+        if (int(guild['permissions']) & 0x8) == 0x8: # Check for Administrator permission
             icon_hash = guild.get('icon')
-            icon_url = f"https://cdn.discordapp.com/icons/{guild['id']}/{icon_hash}.png" if icon_hash else "https://placehold.co/64x64/7f9cf5/ffffff?text=?"
+            icon_url = f"https://cdn.discordapp.com/icons/{guild['id']}/{icon_hash}.png" if icon_hash else f"https://placehold.co/64x64/7f9cf5/ffffff?text={guild.get('name', '?')[0]}"
             admin_guilds.append({
                 "id": guild['id'],
                 "name": guild['name'],
@@ -173,7 +168,6 @@ def add_server():
     server_id = data.get('id')
     server_name = data.get('name')
 
-    # Create default config
     default_config = {
         "server_name": server_name,
         "ai_model": "gemini-2.0-flash",
@@ -195,6 +189,7 @@ def remove_server(server_id):
     if not db: return jsonify({"error": "Database not connected"}), 500
     
     db.collection('server_configs').document(server_id).delete()
+    # In a real app, you'd also delete the memories for this server
     print(f"Removed server config: {server_id}")
     return jsonify({"status": "success", "message": f"Server {server_id} removed."})
 
@@ -206,12 +201,9 @@ def save_server_settings(server_id):
 
     settings = request.json
     
-    # Encrypt the API keys before saving
     encrypted_key = encrypt_key(settings.get('api_key', ''))
     encrypted_backup_key = encrypt_key(settings.get('backup_api_key', ''))
 
-    # Prepare data for Firestore
-    # We only update the fields that are sent from the frontend
     update_data = {
         "ai_model": settings.get('ai_model'),
         "encrypted_api_key": encrypted_key,
@@ -219,9 +211,9 @@ def save_server_settings(server_id):
     }
     
     # In the future, we'd check if the user is premium before saving these
-    if 'custom_name' in settings:
+    if 'custom_name' in settings and settings.get('custom_name'):
         update_data['custom_bot_name'] = settings.get('custom_name')
-    if 'custom_personality' in settings:
+    if 'custom_personality' in settings and settings.get('custom_personality'):
         update_data['custom_personality'] = settings.get('custom_personality')
 
     db.collection('server_configs').document(server_id).update(update_data)
