@@ -54,18 +54,23 @@
     <div class="min-h-screen flex flex-col items-center justify-center p-4">
 
         <!-- =============================================================== -->
-        <!-- PAGE 1: LANDING PAGE                                            -->
+        <!-- PAGE 1: LANDING PAGE (REDESIGNED)                               -->
         <!-- =============================================================== -->
         <div id="landing-page" class="w-full">
-            <div class="w-full max-w-2xl text-center bg-gray-800 bg-opacity-50 backdrop-blur-md rounded-2xl p-8 md:p-12 shadow-2xl mx-auto">
+            <div class="w-full max-w-3xl text-center mx-auto">
                 <div class="mb-6">
-                    <svg class="mx-auto h-16 w-16 text-indigo-400" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M8.625 9.75a.375.375 0 1 1-.75 0 .375.375 0 0 1 .75 0Zm0 0H8.25m4.125 0a.375.375 0 1 1-.75 0 .375.375 0 0 1 .75 0Zm0 0H12m4.125 0a.375.375 0 1 1-.75 0 .375.375 0 0 1 .75 0Zm0 0h-.375M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" /></svg>
+                    <!-- NEW SVG ICON -->
+                    <svg class="mx-auto h-24 w-24 text-indigo-400" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                      <path stroke-linecap="round" stroke-linejoin="round" d="M8.25 3v1.5M4.5 8.25H3m18 0h-1.5M4.5 12H3m18 0h-1.5m-15 3.75H3m18 0h-1.5M8.25 19.5V21M12 3v1.5m0 15V21m3.75-18v1.5m0 15V21m-9-1.5h10.5a2.25 2.25 0 0 0 2.25-2.25V7.5a2.25 2.25 0 0 0-2.25-2.25H6.75A2.25 2.25 0 0 0 4.5 7.5v10.5a2.25 2.25 0 0 0 2.25 2.25Zm.75-12h9v9h-9v-9Z" />
+                    </svg>
                 </div>
-                <h1 class="text-5xl md:text-7xl font-black text-white tracking-tighter mb-4">Evo</h1>
-                <p class="text-lg md:text-xl text-gray-300 mb-8">An AI companion that learns, remembers, and grows with your community.</p>
+                <h1 class="text-5xl md:text-7xl font-black text-white tracking-tighter mb-4 animate-pulse bg-gradient-to-r from-indigo-400 to-purple-500 bg-clip-text text-transparent">Evolve Your Community</h1>
+                <p class="text-lg md:text-xl text-gray-300 max-w-xl mx-auto mb-8">
+                    An AI companion that learns, remembers, and grows with your server. Invite Evo to bring a new level of interactive fun to your members.
+                </p>
                 <div class="flex flex-col items-center space-y-4 w-full">
                     <a id="login-btn" href="#" class="w-full max-w-xs bg-indigo-600 hover:bg-indigo-500 text-white font-bold py-3 px-8 rounded-full shadow-lg transition-transform transform hover:scale-105 text-center">
-                        Sign In with Discord
+                        Sign In & Set Up
                     </a>
                 </div>
             </div>
@@ -500,7 +505,7 @@
         function updateKeyDisplay(inputId, displayId) {
             const input = document.getElementById(inputId);
             const display = document.getElementById(displayId);
-            if (input.value.length > 4) display.textContent = '...' + input.value.slice(-4);
+            if (input..length > 4) display.textContent = '...' + input.value.slice(-4);
             else if (input.value.length > 0) display.textContent = '...';
             else display.textContent = 'None';
         }
