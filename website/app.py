@@ -149,13 +149,11 @@ def get_available_servers():
     
     user_guilds = get_user_guilds(session.get('discord_token'))
     
-    # Get IDs of servers already configured
     configs_ref = db.collection('server_configs').stream()
     configured_guild_ids = {config.id for config in configs_ref}
     
     available_guilds = []
     for guild in user_guilds:
-        # Check for Admin permission AND that it's not already configured
         if (int(guild['permissions']) & 0x8) == 0x8 and guild['id'] not in configured_guild_ids:
             icon_hash = guild.get('icon')
             icon_url = f"https://cdn.discordapp.com/icons/{guild['id']}/{icon_hash}.png" if icon_hash else f"https://placehold.co/64x64/7f9cf5/ffffff?text={guild.get('name', '?')[0]}"
