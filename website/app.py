@@ -17,7 +17,8 @@ DISCORD_CLIENT_SECRET = os.getenv('DISCORD_CLIENT_SECRET')
 DISCORD_REDIRECT_URI = os.getenv('DISCORD_REDIRECT_URI')
 FRONTEND_URL = os.getenv('FRONTEND_URL')
 ENCRYPTION_KEY = os.getenv('ENCRYPTION_KEY')
-BOT_TOKEN = os.getenv('BOT_TOKEN') # Bot needs its own token to fetch channels
+BOT_TOKEN = os.getenv('BOT_TOKEN')
+IMGBB_API_KEY = os.getenv('IMGBB_API_KEY') # API key for imgbb
 
 # Ensure encryption key is loaded
 if not ENCRYPTION_KEY:
@@ -78,7 +79,6 @@ def get_bot_info():
     if not BOT_TOKEN: return jsonify({"error": "Bot token not configured"}), 500
     headers = {"Authorization": f"Bot {BOT_TOKEN}"}
     
-    # First, try to get the application icon, as this is what's usually set in the dev portal.
     app_response = requests.get(f"{API_BASE_URL}/oauth2/applications/@me", headers=headers)
     if app_response.status_code == 200:
         app_info = app_response.json()
@@ -88,7 +88,6 @@ def get_bot_info():
             avatar_url = f"https://cdn.discordapp.com/app-icons/{app_id}/{icon_hash}.png?size=64"
             return jsonify({"avatar": avatar_url})
 
-    # As a fallback, try to get the bot's user avatar.
     user_response = requests.get(f"{API_BASE_URL}/users/@me", headers=headers)
     if user_response.status_code == 200:
         bot_user = user_response.json()
@@ -97,13 +96,52 @@ def get_bot_info():
         if avatar_hash:
             avatar_url = f"https://cdn.discordapp.com/avatars/{bot_id}/{avatar_hash}.png?size=64"
         else:
-            # Default Discord avatar if no user avatar is set
             avatar_url = "https://cdn.discordapp.com/embed/avatars/0.png"
         return jsonify({"avatar": avatar_url})
 
-    # If both attempts fail
     return jsonify({"error": "Failed to fetch bot info"}), 500
 
+@app.route('/api/upload-avatar/<server_id>', methods=['POST'])
+def upload_avatar(server_id):
+    if not session.get('user'):
+        return jsonify({"error": "Not logged in"}), 401
+    if 'avatar' not in request.files:
+        return jsonify({"error": "No file part"}), 400
+
+    file = request.files['avatar']
+    if file.filename == '':
+        return jsonify({"error": "No selected file"}), 400
+
+    if not IMGBB_API_KEY:
+        return jsonify({"error": "imgbb API key not configured on the server"}), 500
+
+    imgbb_api_url = "https://api.imgbb.com/1/upload"
+    payload = {"key": IMGBB_API_KEY}
+    
+    try:
+        response = requests.post(
+            imgbb_api_url,
+            params=payload,
+            files={"image": file}
+        )
+        response.raise_for_status()
+        imgbb_data = response.json()
+
+        if imgbb_data.get('success'):
+            avatar_url = imgbb_data['data']['url']
+            db.collection('server_configs').document(server_id).update({
+                "custom_avatar_url": avatar_url
+            })
+            return jsonify({"success": True, "avatar_url": avatar_url})
+        else:
+            error_message = imgbb_data.get('error', {}).get('message', 'imgbb API returned an error')
+            return jsonify({"error": error_message}), 500
+
+    except requests.exceptions.RequestException as e:
+        print(f"Error calling imgbb API: {e}")
+        return jsonify({"error": f"Failed to upload to imgbb: {e}"}), 500
+    except Exception as e:
+        return jsonify({"error": f"An unexpected error occurred: {e}"}), 500
 
 # --- DISCORD OAUTH2 ROUTES ---
 @app.route('/login')
@@ -136,7 +174,6 @@ def get_current_user():
     return jsonify({"error": "Not logged in"}), 401
 
 # --- LIVE DATA API ROUTES ---
-
 @app.route('/api/user-servers', methods=['GET'])
 def get_user_servers():
     if not session.get('user'): return jsonify({"error": "Not logged in"}), 401
@@ -158,7 +195,6 @@ def get_user_servers():
 
 @app.route('/api/available-servers', methods=['GET'])
 def get_available_servers():
-    """Returns a list of servers the user is an admin of THAT ARE NOT YET CONFIGURED."""
     if not session.get('user'): return jsonify({"error": "Not logged in"}), 401
     if not db: return jsonify({"error": "Database not connected"}), 500
     
@@ -223,7 +259,6 @@ def get_server_settings(server_id):
     else:
         return jsonify({"error": "No settings found for this server."}), 404
 
-
 @app.route('/api/server-settings/<server_id>', methods=['POST'])
 def save_server_settings(server_id):
     if not session.get('user'): return jsonify({"error": "Not logged in"}), 401
@@ -264,3 +299,4 @@ def save_server_settings(server_id):
 if __name__ == "__main__":
     port = int(os.environ.get('PORT', 8080))
     app.run(host='0.0.0.0', port=port)
+
