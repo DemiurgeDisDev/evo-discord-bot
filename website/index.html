@@ -4,7 +4,9 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Evo - Your AI Companion</title>
+    <!-- Tailwind CSS for styling -->
     <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Google Fonts: Inter -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;900&display=swap" rel="stylesheet">
@@ -48,11 +50,16 @@
 </head>
 <body class="gradient-bg text-white antialiased">
 
+    <!-- This container will hold all our different pages -->
     <div class="min-h-screen flex flex-col items-center justify-center p-4">
 
+        <!-- =============================================================== -->
+        <!-- PAGE 1: LANDING PAGE (REDESIGNED)                               -->
+        <!-- =============================================================== -->
         <div id="landing-page" class="w-full">
             <div class="w-full max-w-3xl text-center mx-auto">
                 <div class="mb-6">
+                    <!-- NEW SVG ICON -->
                     <svg class="mx-auto h-24 w-24 text-indigo-400" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
                       <path stroke-linecap="round" stroke-linejoin="round" d="M8.25 3v1.5M4.5 8.25H3m18 0h-1.5M4.5 12H3m18 0h-1.5m-15 3.75H3m18 0h-1.5M8.25 19.5V21M12 3v1.5m0 15V21m3.75-18v1.5m0 15V21m-9-1.5h10.5a2.25 2.25 0 0 0 2.25-2.25V7.5a2.25 2.25 0 0 0-2.25-2.25H6.75A2.25 2.25 0 0 0 4.5 7.5v10.5a2.25 2.25 0 0 0 2.25 2.25Zm.75-12h9v9h-9v-9Z" />
                     </svg>
@@ -69,6 +76,9 @@
             </div>
         </div>
 
+        <!-- =============================================================== -->
+        <!-- PAGE 2: SERVER DASHBOARD                                        -->
+        <!-- =============================================================== -->
         <div id="server-dashboard" class="page-view w-full max-w-4xl relative">
             <div class="absolute top-0 right-0 mt-2 mr-2 flex items-center space-x-4">
                 <div id="user-info" class="text-right">
@@ -90,6 +100,9 @@
             </div>
         </div>
 
+        <!-- =============================================================== -->
+        <!-- PAGE 3: SERVER SETTINGS                                         -->
+        <!-- =============================================================== -->
         <div id="server-settings" class="page-view w-full max-w-2xl">
             <button id="back-to-dashboard-btn" class="mb-6 text-indigo-400 hover:text-indigo-300 font-semibold">&larr; Back to Dashboard</button>
             <div class="bg-gray-800 bg-opacity-50 backdrop-blur-sm rounded-2xl p-8 shadow-2xl">
@@ -99,6 +112,7 @@
                 </div>
                 
                 <div class="space-y-6">
+                    <!-- API & Model Settings -->
                     <div class="space-y-6">
                         <div>
                             <label for="ai-model" class="block text-sm font-medium text-gray-300 mb-1">AI Model Name</label>
@@ -135,10 +149,12 @@
                         <div>
                             <label for="designated-channel" class="block text-sm font-medium text-gray-300 mb-1">Designated Channel</label>
                             <select id="designated-channel" class="w-full bg-gray-900 border border-gray-700 rounded-md px-3 py-2 text-white focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500">
-                                </select>
+                                <!-- Options will be populated by JavaScript -->
+                            </select>
                         </div>
                     </div>
 
+                    <!-- Premium Section -->
                     <div class="pt-6 border-t border-gray-700">
                         <div id="premium-section-wrapper" class="relative">
                             <div id="premium-fields" class="space-y-6">
@@ -150,7 +166,8 @@
                                     <label class="block text-sm font-medium text-gray-300 mb-1">Custom Avatar</label>
                                     <div class="mt-2 flex items-center gap-x-3">
                                         <img id="avatar-preview" src="https://cdn.discordapp.com/embed/avatars/0.png" class="h-16 w-16 rounded-full text-gray-500" />
-                                        <button type="button" class="rounded-md bg-white/10 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-white/20">Click to upload</button>
+                                        <input type="file" id="avatar-upload-input" class="hidden" accept="image/png, image/jpeg, image/gif">
+                                        <button id="upload-avatar-btn" type="button" class="rounded-md bg-white/10 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-white/20">Click to upload</button>
                                     </div>
                                 </div>
                                 <div>
@@ -168,6 +185,7 @@
                         </div>
                     </div>
 
+                    <!-- Action Buttons -->
                     <div class="pt-6 border-t border-gray-700 flex flex-col sm:flex-row gap-4">
                         <button id="save-settings-btn" class="w-full bg-indigo-600 hover:bg-indigo-500 text-white font-bold py-3 px-6 rounded-lg shadow-lg">Save Settings</button>
                         <button id="remove-server-btn" class="w-full bg-red-800 hover:bg-red-700 text-white font-bold py-3 px-6 rounded-lg shadow-lg">Remove Server</button>
@@ -176,6 +194,7 @@
             </div>
         </div>
         
+        <!-- LEGAL PAGES -->
         <div id="terms-page" class="page-view w-full max-w-3xl">
             <button class="go-back-btn mb-6 text-indigo-400 hover:text-indigo-300 font-semibold">&larr; Go Back</button>
             <div class="bg-gray-800 bg-opacity-50 backdrop-blur-sm rounded-2xl p-8 shadow-2xl legal-content">
@@ -220,6 +239,7 @@
         </div>
     </div>
 
+    <!-- FOOTER -->
     <footer class="w-full text-center p-4 text-gray-500">
         <div class="space-x-4">
             <button id="terms-link" class="hover:text-gray-300">Terms of Service</button>
@@ -229,6 +249,7 @@
     </footer>
 
 
+    <!-- MODALS -->
     <div id="add-server-modal" style="display: none;" class="fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center p-4 z-50">
         <div class="bg-gray-800 rounded-2xl w-full max-w-md shadow-2xl">
             <div class="p-6 border-b border-gray-700 flex justify-between items-center">
@@ -287,8 +308,11 @@
         const termsLink = document.getElementById('terms-link');
         const privacyLink = document.getElementById('privacy-link');
         const goBackBtns = document.querySelectorAll('.go-back-btn');
+        const uploadAvatarBtn = document.getElementById('upload-avatar-btn');
+        const avatarUploadInput = document.getElementById('avatar-upload-input');
+        const avatarPreview = document.getElementById('avatar-preview');
 
-        // --- PAGE NAVIGATION LOGIC ---
+        // --- PAGE NAVIGATION & EVENT LISTENERS ---
         function showPage(pageId) {
             allPages.forEach(p => p.style.display = 'none');
             const page = document.getElementById(pageId);
@@ -315,6 +339,41 @@
                 else showPage('landing-page');
             });
         });
+        uploadAvatarBtn.addEventListener('click', () => avatarUploadInput.click());
+
+        avatarUploadInput.addEventListener('change', async (event) => {
+            const file = event.target.files[0];
+            if (!file || !currentServer) return;
+
+            const formData = new FormData();
+            formData.append('avatar', file);
+
+            uploadAvatarBtn.textContent = 'Uploading...';
+            uploadAvatarBtn.disabled = true;
+
+            try {
+                const response = await fetch(`${API_BASE_URL}/api/upload-avatar/${currentServer.id}`, {
+                    method: 'POST',
+                    body: formData,
+                    ...fetchOptions
+                });
+
+                if (!response.ok) throw new Error('Upload failed');
+
+                const result = await response.json();
+                if (result.success) {
+                    avatarPreview.src = result.avatar_url;
+                } else {
+                    alert(`Upload failed: ${result.error}`);
+                }
+            } catch (error) {
+                console.error('Failed to upload avatar:', error);
+                alert('Could not upload the avatar.');
+            } finally {
+                uploadAvatarBtn.textContent = 'Click to upload';
+                uploadAvatarBtn.disabled = false;
+            }
+        });
 
         // --- API & DYNAMIC RENDERING LOGIC ---
         const fetchOptions = { credentials: 'include' };
@@ -322,15 +381,10 @@
         async function fetchBotInfo() {
             try {
                 const response = await fetch(`${API_BASE_URL}/api/bot-info`);
-                if (response.ok) {
+                if(response.ok) {
                     botInfo = await response.json();
-                    if (botInfo.avatar) {
-                        document.getElementById('avatar-preview').src = botInfo.avatar;
-                    }
                 }
-            } catch (e) {
-                console.error("Could not fetch bot info:", e);
-            }
+            } catch (e) { console.error("Could not fetch bot info", e); }
         }
 
         async function updateUserInfo() {
@@ -433,9 +487,11 @@
             document.getElementById('settings-server-icon').src = server.icon;
             document.getElementById('settings-server-name').textContent = server.name;
             
+            // Reset fields while loading
             document.getElementById('ai-model').value = 'Loading...';
             document.getElementById('custom-name').value = 'Loading...';
             document.getElementById('custom-personality').value = 'Loading...';
+            avatarPreview.src = 'https://cdn.discordapp.com/embed/avatars/0.png';
             showPage('server-settings');
 
             const [settingsRes, channelsRes] = await Promise.all([
@@ -463,6 +519,7 @@
                 channelSelect.value = savedSettings.designated_channel || 'all';
                 document.getElementById('custom-name').value = savedSettings.custom_bot_name || '';
                 document.getElementById('custom-personality').value = savedSettings.custom_personality || '';
+                avatarPreview.src = savedSettings.custom_avatar_url || botInfo.avatar || 'https://cdn.discordapp.com/embed/avatars/0.png';
                 
                 if (savedSettings.user_premium || savedSettings.server_premium) {
                     premiumOverlay.style.display = 'none';
@@ -472,12 +529,14 @@
                     premiumFields.classList.add('blur-md', 'pointer-events-none');
                 }
             } else {
+                // Reset to default if no settings are found
                 document.getElementById('ai-model').value = '';
                 document.getElementById('api-key-display').textContent = 'None';
                 document.getElementById('backup-api-key-display').textContent = 'None';
                 channelSelect.value = 'all';
                 document.getElementById('custom-name').value = '';
                 document.getElementById('custom-personality').value = '';
+                avatarPreview.src = botInfo.avatar || 'https://cdn.discordapp.com/embed/avatars/0.png';
                 premiumOverlay.style.display = 'flex';
                 premiumFields.classList.add('blur-md', 'pointer-events-none');
             }
@@ -485,15 +544,6 @@
             document.getElementById('backup-api-key').value = '';
         }
 
-        // --- UTILITY FUNCTIONS ---
-        function updateKeyDisplay(inputId, displayId) {
-            const input = document.getElementById(inputId);
-            const display = document.getElementById(displayId);
-            if (input.value.length > 4) display.textContent = '...' + input.value.slice(-4);
-            else if (input.value.length > 0) display.textContent = '...';
-            else display.textContent = 'None';
-        }
-        
         // --- INITIALIZATION ---
         document.addEventListener('DOMContentLoaded', async () => {
             await fetchBotInfo(); // Fetch bot info on load
