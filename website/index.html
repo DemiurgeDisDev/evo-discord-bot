@@ -202,7 +202,6 @@
 
 
     <script>
-        // THIS IS THE ONLY LINE YOU NEED TO CHANGE FOR PRODUCTION
         const API_BASE_URL = 'https://evo-app-aiop.onrender.com'; 
 
         // --- GLOBAL STATE ---
@@ -250,8 +249,8 @@
 
         closeModalBtn.addEventListener('click', () => addServerModal.style.display = 'none');
         backToDashboardBtn.addEventListener('click', () => showPage('server-dashboard'));
-        logoutBtn.addEventListener('click', () => {
-            // In a real app, you'd also call a /logout endpoint on the backend
+        logoutBtn.addEventListener('click', async () => {
+            await fetch(`${API_BASE_URL}/logout`, {credentials: 'include'});
             showPage('landing-page');
         });
         removeServerBtn.addEventListener('click', () => removeConfirmModal.style.display = 'flex');
@@ -272,10 +271,18 @@
 
         // --- API & DYNAMIC RENDERING LOGIC ---
 
+        // NEW: A single options object for all fetch calls to include credentials
+        const fetchOptions = {
+            credentials: 'include'
+        };
+
         async function updateUserInfo() {
             try {
-                const response = await fetch(`${API_BASE_URL}/api/me`, {credentials: 'include'});
-                if (!response.ok) return; // Not logged in
+                const response = await fetch(`${API_BASE_URL}/api/me`, fetchOptions);
+                if (!response.ok) {
+                    showPage('landing-page'); // If not logged in, show landing page
+                    return;
+                }
                 const user = await response.json();
                 userInfoDiv.innerHTML = `
                     <p class="font-bold text-white">${user.username}</p>
@@ -286,7 +293,7 @@
 
         async function loadAndRenderServerDashboard() {
             try {
-                const response = await fetch(`${API_BASE_URL}/api/user-servers`);
+                const response = await fetch(`${API_BASE_URL}/api/user-servers`, fetchOptions);
                 if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
                 const userServers = await response.json();
                 
@@ -312,8 +319,8 @@
         async function loadAndRenderModalServerList() {
             try {
                 const [userServersRes, availableServersRes] = await Promise.all([
-                    fetch(`${API_BASE_URL}/api/user-servers`),
-                    fetch(`${API_BASE_URL}/api/available-servers`)
+                    fetch(`${API_BASE_URL}/api/user-servers`, fetchOptions),
+                    fetch(`${API_BASE_URL}/api/available-servers`, fetchOptions)
                 ]);
                 if (!userServersRes.ok || !availableServersRes.ok) throw new Error(`HTTP error!`);
                 
@@ -349,7 +356,8 @@
                 const response = await fetch(`${API_BASE_URL}/api/add-server`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(server)
+                    body: JSON.stringify(server),
+                    ...fetchOptions
                 });
                 if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
                 const result = await response.json();
@@ -364,7 +372,7 @@
 
         async function removeServer(serverId) {
             try {
-                const response = await fetch(`${API_BASE_URL}/api/remove-server/${serverId}`, { method: 'DELETE' });
+                const response = await fetch(`${API_BASE_URL}/api/remove-server/${serverId}`, { method: 'DELETE', ...fetchOptions });
                 if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
                 
                 removeConfirmModal.style.display = 'none';
@@ -391,7 +399,8 @@
                 const response = await fetch(`${API_BASE_URL}/api/server-settings/${serverId}`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(settings)
+                    body: JSON.stringify(settings),
+                    ...fetchOptions
                 });
                 if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
                 const result = await response.json();
@@ -437,9 +446,7 @@
         
         // --- INITIALIZATION ---
         document.addEventListener('DOMContentLoaded', () => {
-            // Check if the URL has #dashboard in it, which means we just logged in
             if (window.location.hash === '#dashboard') {
-                // Remove the hash from the URL so it looks clean
                 history.pushState("", document.title, window.location.pathname + window.location.search);
                 updateUserInfo();
                 loadAndRenderServerDashboard();
