@@ -14,6 +14,14 @@ DISCORD_CLIENT_SECRET = os.getenv('DISCORD_CLIENT_SECRET')
 DISCORD_REDIRECT_URI = os.getenv('DISCORD_REDIRECT_URI')
 FRONTEND_URL = os.getenv('FRONTEND_URL')
 
+# --- NEW: SESSION COOKIE CONFIGURATION FOR PRODUCTION ---
+# This ensures cookies are sent correctly between the backend and frontend on different domains.
+app.config.update(
+    SESSION_COOKIE_SECURE=True,
+    SESSION_COOKIE_HTTPONLY=True,
+    SESSION_COOKIE_SAMESITE='None',
+)
+
 # --- CORS CONFIGURATION ---
 CORS(app, supports_credentials=True, origins=[FRONTEND_URL])
 
@@ -56,21 +64,38 @@ def login():
 
 @app.route('/callback')
 def callback():
-    discord = OAuth2Session(DISCORD_CLIENT_ID, state=session.get('oauth2_state'), redirect_uri=DISCORD_REDIRECT_URI)
-    token = discord.fetch_token(
-        TOKEN_URL,
-        client_secret=DISCORD_CLIENT_SECRET,
-        authorization_response=request.url
-    )
-    
-    session['discord_token'] = token
-    user_info_response = discord.get(API_BASE_URL + '/users/@me')
-    user_info = user_info_response.json()
-    session['user'] = user_info
-    print(f"User logged in: {user_info.get('username')}#{user_info.get('discriminator')}")
+    try:
+        discord = OAuth2Session(DISCORD_CLIENT_ID, state=session.get('oauth2_state'), redirect_uri=DISCORD_REDIRECT_URI)
+        token = discord.fetch_token(
+            TOKEN_URL,
+            client_secret=DISCORD_CLIENT_SECRET,
+            authorization_response=request.url
+        )
+        
+        session['discord_token'] = token
+        user_info_response = discord.get(API_BASE_URL + '/users/@me')
+        user_info = user_info_response.json()
+        session['user'] = user_info
+        print(f"User logged in: {user_info.get('username')}#{user_info.get('discriminator')}")
 
-    # THE FIX IS HERE: Using a query parameter instead of a hash
-    return redirect(f"{FRONTEND_URL}/?loggedin=true")
+        # --- DEBUGGING LOGS ---
+        frontend_url = os.getenv('FRONTEND_URL')
+        print(f"DEBUG: Read FRONTEND_URL from environment: {frontend_url}")
+
+        if not frontend_url:
+            print("ERROR: FRONTEND_URL environment variable is not set!")
+            return jsonify({"error": "Backend configuration issue: FRONTEND_URL is missing."}), 500
+
+        final_redirect_url = f"{frontend_url}/?loggedin=true"
+        print(f"DEBUG: Redirecting user to: {final_redirect_url}")
+        # --- END DEBUGGING LOGS ---
+
+        return redirect(final_redirect_url)
+
+    except Exception as e:
+        print(f"An error occurred in the callback function: {e}")
+        return jsonify({"error": "An internal error occurred during login."}), 500
+
 
 @app.route('/logout')
 def logout():
