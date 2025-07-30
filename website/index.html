@@ -271,7 +271,6 @@
 
         // --- API & DYNAMIC RENDERING LOGIC ---
 
-        // NEW: A single options object for all fetch calls to include credentials
         const fetchOptions = {
             credentials: 'include'
         };
@@ -280,7 +279,7 @@
             try {
                 const response = await fetch(`${API_BASE_URL}/api/me`, fetchOptions);
                 if (!response.ok) {
-                    showPage('landing-page'); // If not logged in, show landing page
+                    showPage('landing-page');
                     return;
                 }
                 const user = await response.json();
@@ -446,8 +445,11 @@
         
         // --- INITIALIZATION ---
         document.addEventListener('DOMContentLoaded', () => {
-            if (window.location.hash === '#dashboard') {
-                history.pushState("", document.title, window.location.pathname + window.location.search);
+            // THE FIX IS HERE: Check for the query parameter instead of the hash
+            const urlParams = new URLSearchParams(window.location.search);
+            if (urlParams.get('loggedin') === 'true') {
+                // Remove the query parameter from the URL so it looks clean
+                history.pushState(null, '', window.location.pathname);
                 updateUserInfo();
                 loadAndRenderServerDashboard();
                 showPage('server-dashboard');
