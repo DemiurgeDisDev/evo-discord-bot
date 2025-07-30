@@ -110,10 +110,13 @@
                         <div>
                             <label for="ai-model" class="block text-sm font-medium text-gray-300 mb-1">AI Model Name</label>
                             <div class="flex items-center space-x-2">
-                                <input type="text" id="ai-model" placeholder="gemini-2.5-flash-lite-preview-06-17" class="w-full bg-gray-900 border border-gray-700 rounded-md px-3 py-2 text-white focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500">
+                                <input type="text" id="ai-model" placeholder="gemini-2.5-flash-lite" class="w-full bg-gray-900 border border-gray-700 rounded-md px-3 py-2 text-white focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500">
+                                <!-- NEW: Use Recommended Button -->
+                                <button id="use-recommended-model-btn" class="text-xs bg-indigo-600 hover:bg-indigo-500 text-white font-semibold py-2 px-3 rounded-md whitespace-nowrap">Use Recommended</button>
                                 <div class="tooltip">
                                     <svg class="w-6 h-6 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
-                                    <span class="tooltiptext">gemini-2.5-flash-lite-preview-06-17 is a recommended model by Evo developers.</span>
+                                    <!-- NEW: Updated Tooltip Text -->
+                                    <span class="tooltiptext">gemini-2.5-flash-lite is a recommended model by Evo developers for its balance of speed and intelligence.</span>
                                 </div>
                             </div>
                         </div>
@@ -150,7 +153,7 @@
                                 </div>
                                 <div>
                                     <label for="custom-personality" class="block text-sm font-medium text-gray-300 mb-1">Custom Personality</label>
-                                    <textarea id="custom-personality" rows="5" placeholder="You are Evo. Your persona is that of a goofy, airheaded, and friendly tomboy who loves anime" class="w-full bg-gray-900 border border-gray-700 rounded-md px-3 py-2 text-white focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"></textarea>
+                                    <textarea id="custom-personality" rows="5" placeholder="You are Evo. Your persona is that of a sharp-witted and humorous tomboy..." class="w-full bg-gray-900 border border-gray-700 rounded-md px-3 py-2 text-white focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"></textarea>
                                 </div>
                             </div>
                             <div id="premium-overlay" class="absolute inset-0 bg-gray-900/80 backdrop-blur-sm flex flex-col items-center justify-center rounded-lg p-6 text-center">
@@ -227,6 +230,7 @@
         const cancelRemoveBtn = document.getElementById('cancel-remove-btn');
         const confirmRemoveBtn = document.getElementById('confirm-remove-btn');
         const subscribeBtn = document.getElementById('subscribe-btn');
+        const useRecommendedModelBtn = document.getElementById('use-recommended-model-btn');
         
         const serverGrid = document.getElementById('server-grid');
         const modalServerList = document.getElementById('modal-server-list');
@@ -267,6 +271,10 @@
         subscribeBtn.addEventListener('click', () => {
             premiumOverlay.style.display = 'none';
             premiumFields.classList.remove('blur-md', 'pointer-events-none');
+        });
+
+        useRecommendedModelBtn.addEventListener('click', () => {
+            document.getElementById('ai-model').value = 'gemini-2.5-flash-lite';
         });
 
         // --- API & DYNAMIC RENDERING LOGIC ---
@@ -421,9 +429,10 @@
             document.getElementById('api-key').value = '';
             document.getElementById('backup-api-key').value = '';
             document.getElementById('custom-name').value = '';
-            const personalityTextarea = document.getElementById('custom-personality');
+_            const personalityTextarea = document.getElementById('custom-personality');
             personalityTextarea.value = '';
-            personalityTextarea.placeholder = "You are Evo. Your persona is that of a goofy, airheaded, and friendly tomboy who loves anime";
+            personalityTextarea.placeholder = "You are Evo. Your persona is that of a sharp-witted and humorous tomboy...";
+
             updateKeyDisplay('api-key', 'api-key-display');
             updateKeyDisplay('backup-api-key', 'backup-api-key-display');
             premiumOverlay.style.display = 'flex';
@@ -431,6 +440,7 @@
             showPage('server-settings');
         }
 
+        // --- UTILITY FUNCTIONS ---
         function updateKeyDisplay(inputId, displayId) {
             const input = document.getElementById(inputId);
             const display = document.getElementById(displayId);
@@ -445,10 +455,8 @@
         
         // --- INITIALIZATION ---
         document.addEventListener('DOMContentLoaded', () => {
-            // THE FIX IS HERE: Check for the query parameter instead of the hash
             const urlParams = new URLSearchParams(window.location.search);
             if (urlParams.get('loggedin') === 'true') {
-                // Remove the query parameter from the URL so it looks clean
                 history.pushState(null, '', window.location.pathname);
                 updateUserInfo();
                 loadAndRenderServerDashboard();
@@ -460,3 +468,4 @@
     </script>
 </body>
 </html>
+
