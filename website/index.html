@@ -170,7 +170,6 @@
                                 </div>
                             </div>
                             <div id="premium-overlay" class="absolute inset-0 bg-gray-900/80 backdrop-blur-sm flex flex-col items-center justify-center rounded-lg p-6 text-center">
-                                <!-- NEW: Updated Text -->
                                 <h3 class="text-2xl font-bold text-indigo-300">Premium Features</h3>
                                 <p class="my-4 text-gray-300">This feature may be monetized in the future.</p>
                                 <button id="subscribe-btn" class="mt-4 bg-indigo-600 hover:bg-indigo-500 text-white font-bold py-3 px-8 rounded-full shadow-lg transition-transform transform hover:scale-105">
@@ -376,22 +375,16 @@
         async function loadAndRenderModalServerList() {
             modalServerList.innerHTML = `<p class="p-4 text-center text-gray-400">Loading servers...</p>`;
             try {
-                const [userServersRes, availableServersRes] = await Promise.all([
-                    fetch(`${API_BASE_URL}/api/user-servers`, fetchOptions),
-                    fetch(`${API_BASE_URL}/api/available-servers`, fetchOptions)
-                ]);
-                if (!userServersRes.ok || !availableServersRes.ok) throw new Error(`HTTP error!`);
-                const userServers = await userServersRes.json();
-                const allAvailableServers = await availableServersRes.json();
-                const userServerIds = new Set(userServers.map(s => s.id));
-                const filteredServers = allAvailableServers.filter(s => !userServerIds.has(s.id));
-
+                const availableServersRes = await fetch(`${API_BASE_URL}/api/available-servers`, fetchOptions);
+                if (!availableServersRes.ok) throw new Error(`HTTP error!`);
+                const availableServers = await availableServersRes.json();
+                
                 modalServerList.innerHTML = '';
-                if (filteredServers.length === 0) {
+                if (availableServers.length === 0) {
                     modalServerList.innerHTML = `<p class="p-4 text-center text-gray-400">No new servers to add.</p>`;
                     return;
                 }
-                filteredServers.forEach(server => {
+                availableServers.forEach(server => {
                     const item = document.createElement('div');
                     item.className = 'flex items-center p-3 hover:bg-gray-700 rounded-lg cursor-pointer';
                     item.innerHTML = `<img src="${server.icon}" alt="${server.name}" class="w-10 h-10 rounded-full mr-4"><span class="font-semibold">${server.name}</span>`;
