@@ -185,71 +185,53 @@
                 </div>
             </div>
         </div>
-
-        <!-- =============================================================== -->
-        <!-- NEW: PAGE 4: TERMS OF SERVICE                                   -->
-        <!-- =============================================================== -->
+        
+        <!-- LEGAL PAGES -->
         <div id="terms-page" class="page-view w-full max-w-3xl">
             <button class="go-back-btn mb-6 text-indigo-400 hover:text-indigo-300 font-semibold">&larr; Go Back</button>
             <div class="bg-gray-800 bg-opacity-50 backdrop-blur-sm rounded-2xl p-8 shadow-2xl legal-content">
                 <h1 class="text-3xl font-bold mb-4">Terms of Service</h1>
                 <p><strong>Last Updated: July 30, 2025</strong></p>
                 <p>Welcome to Evo! These terms and conditions outline the rules and regulations for the use of Evo's services. By adding Evo to your server or using our website, you accept these terms and conditions. Do not continue to use Evo if you do not agree to all of the terms and conditions stated on this page.</p>
-                
                 <h2>1. The Service</h2>
                 <p>Evo ("the Service") is a Discord bot that provides conversational AI features. The Service requires a user-provided API key from a third-party AI provider (e.g., Google AI Studio) to function. Premium features, such as custom personalities and avatars, are available via a subscription.</p>
-
                 <h2>2. User Responsibilities</h2>
                 <ul>
                     <li>You are responsible for the security and usage of your third-party AI API key. We securely encrypt your key but are not liable for any charges incurred on your key.</li>
                     <li>You agree not to use the Service to generate, promote, or engage in any content that is illegal, harmful, harassing, or violates Discord's Terms of Service.</li>
                     <li>You must have the necessary permissions (i.e., Administrator rights) to add and configure Evo on a Discord server.</li>
                 </ul>
-
                 <h2>3. Premium Services</h2>
                 <p>Premium features are offered on a subscription basis. Payments are handled by a third-party payment processor. We reserve the right to change our subscription fees upon 30 days' notice.</p>
-
                 <h2>4. Termination</h2>
                 <p>We may terminate or suspend your access to our Service immediately, without prior notice or liability, for any reason whatsoever, including without limitation if you breach the Terms. You can remove the bot from your server at any time.</p>
-
                 <h2>5. Disclaimer</h2>
                 <p>The Service is provided on an "AS IS" and "AS AVAILABLE" basis. Evo is a third-party application and is not affiliated with, endorsed, or sponsored by Discord Inc.</p>
             </div>
         </div>
-
-        <!-- =============================================================== -->
-        <!-- NEW: PAGE 5: PRIVACY POLICY                                     -->
-        <!-- =============================================================== -->
         <div id="privacy-page" class="page-view w-full max-w-3xl">
             <button class="go-back-btn mb-6 text-indigo-400 hover:text-indigo-300 font-semibold">&larr; Go Back</button>
             <div class="bg-gray-800 bg-opacity-50 backdrop-blur-sm rounded-2xl p-8 shadow-2xl legal-content">
                 <h1 class="text-3xl font-bold mb-4">Privacy Policy</h1>
                 <p><strong>Last Updated: July 30, 2025</strong></p>
                 <p>Your privacy is important to us. It is Evo's policy to respect your privacy regarding any information we may collect from you.</p>
-
                 <h2>1. Information We Collect</h2>
                 <ul>
                     <li><strong>Discord Information:</strong> When you log in, we receive your Discord user ID, username, and a list of servers you are in. We only use this to provide our service and do not share it.</li>
                     <li><strong>Server Configurations:</strong> We store the settings you configure for your server, including the server ID, chosen AI model, and custom personality settings.</li>
                     <li><strong>User-Provided API Keys:</strong> We require you to provide an API key from a third-party AI provider. We store these keys in an encrypted format and only use them to make AI requests on your behalf for your server. We do not log the content of your conversations with the AI.</li>
                 </ul>
-
                 <h2>2. How We Use Information</h2>
                 <p>We use the information we collect to operate, maintain, and provide the features and functionality of the Service. We do not sell or share your personal information with third parties, except as required by law.</p>
-
                 <h2>3. Data Storage and Security</h2>
                 <p>Your data, including encrypted API keys and server configurations, is stored on secure servers provided by Firebase (a Google company). We take reasonable measures to protect your information from unauthorized access or disclosure.</p>
-
                 <h2>4. Your Rights</h2>
                 <p>You have the right to remove your data from our service at any time by removing the bot from your server and using the "Remove Server" button on our dashboard, which will delete your server's configuration from our database.</p>
             </div>
         </div>
-
     </div>
 
-    <!-- =============================================================== -->
-    <!-- NEW: FOOTER                                                     -->
-    <!-- =============================================================== -->
+    <!-- FOOTER -->
     <footer class="w-full text-center p-4 text-gray-500">
         <div class="space-x-4">
             <button id="terms-link" class="hover:text-gray-300">Terms of Service</button>
@@ -290,56 +272,185 @@
         let isUserLoggedIn = false;
 
         // --- DOM ELEMENTS ---
+        const allPages = document.querySelectorAll('.page-view, #landing-page');
         const landingPage = document.getElementById('landing-page');
         const serverDashboard = document.getElementById('server-dashboard');
         const serverSettings = document.getElementById('server-settings');
         const termsPage = document.getElementById('terms-page');
         const privacyPage = document.getElementById('privacy-page');
-        // ... (other DOM elements)
+        const addServerModal = document.getElementById('add-server-modal');
+        const removeConfirmModal = document.getElementById('remove-confirm-modal');
+        const premiumFields = document.getElementById('premium-fields');
+        const premiumOverlay = document.getElementById('premium-overlay');
+        const userInfoDiv = document.getElementById('user-info');
+        const loginBtn = document.getElementById('login-btn');
+        const addServerCard = document.getElementById('add-server-card');
+        const closeModalBtn = document.getElementById('close-modal-btn');
+        const backToDashboardBtn = document.getElementById('back-to-dashboard-btn');
+        const saveSettingsBtn = document.getElementById('save-settings-btn');
+        const logoutBtn = document.getElementById('logout-btn');
+        const removeServerBtn = document.getElementById('remove-server-btn');
+        const cancelRemoveBtn = document.getElementById('cancel-remove-btn');
+        const confirmRemoveBtn = document.getElementById('confirm-remove-btn');
+        const subscribeBtn = document.getElementById('subscribe-btn');
+        const useRecommendedModelBtn = document.getElementById('use-recommended-model-btn');
+        const serverGrid = document.getElementById('server-grid');
+        const modalServerList = document.getElementById('modal-server-list');
         const termsLink = document.getElementById('terms-link');
         const privacyLink = document.getElementById('privacy-link');
         const goBackBtns = document.querySelectorAll('.go-back-btn');
 
         // --- PAGE NAVIGATION LOGIC ---
         function showPage(pageId) {
-            document.querySelectorAll('.page-view').forEach(p => p.style.display = 'none');
-            landingPage.style.display = 'none';
+            allPages.forEach(p => p.style.display = 'none');
             const page = document.getElementById(pageId);
             if (page) page.style.display = 'block';
             else landingPage.style.display = 'block';
         }
 
+        loginBtn.href = `${API_BASE_URL}/login`;
+        addServerCard.addEventListener('click', () => { loadAndRenderModalServerList(); addServerModal.style.display = 'flex'; });
+        closeModalBtn.addEventListener('click', () => addServerModal.style.display = 'none');
+        backToDashboardBtn.addEventListener('click', () => { loadAndRenderServerDashboard(); showPage('server-dashboard'); });
+        logoutBtn.addEventListener('click', async () => { await fetch(`${API_BASE_URL}/logout`, {credentials: 'include'}); isUserLoggedIn = false; showPage('landing-page'); });
+        removeServerBtn.addEventListener('click', () => removeConfirmModal.style.display = 'flex');
+        cancelRemoveBtn.addEventListener('click', () => removeConfirmModal.style.display = 'none');
+        saveSettingsBtn.addEventListener('click', () => { if (currentServer) saveSettingsForServer(currentServer); });
+        confirmRemoveBtn.addEventListener('click', () => { if(currentServer) removeServer(currentServer.id); });
+        subscribeBtn.addEventListener('click', () => { premiumOverlay.style.display = 'none'; premiumFields.classList.remove('blur-md', 'pointer-events-none'); });
+        useRecommendedModelBtn.addEventListener('click', () => { document.getElementById('ai-model').value = 'gemini-2.5-flash-lite'; });
         termsLink.addEventListener('click', () => showPage('terms-page'));
         privacyLink.addEventListener('click', () => showPage('privacy-page'));
         goBackBtns.forEach(btn => {
             btn.addEventListener('click', () => {
-                if (isUserLoggedIn) {
-                    showPage('server-dashboard');
-                } else {
-                    showPage('landing-page');
-                }
+                if (isUserLoggedIn) showPage('server-dashboard');
+                else showPage('landing-page');
             });
         });
 
         // --- API & DYNAMIC RENDERING LOGIC ---
+        const fetchOptions = { credentials: 'include' };
+
         async function updateUserInfo() {
             try {
-                const response = await fetch(`${API_BASE_URL}/api/me`, {credentials: 'include'});
-                if (!response.ok) {
-                    isUserLoggedIn = false;
-                    showPage('landing-page');
+                const response = await fetch(`${API_BASE_URL}/api/me`, fetchOptions);
+                if (!response.ok) { isUserLoggedIn = false; return; }
+                const user = await response.json();
+                isUserLoggedIn = true;
+                userInfoDiv.innerHTML = `<p class="font-bold text-white">${user.username}</p><p class="text-xs text-gray-400">#${user.discriminator}</p>`;
+            } catch(e) { isUserLoggedIn = false; console.error("Could not fetch user info", e); }
+        }
+
+        async function loadAndRenderServerDashboard() {
+            try {
+                const response = await fetch(`${API_BASE_URL}/api/user-servers`, fetchOptions);
+                if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+                const userServers = await response.json();
+                
+                serverGrid.innerHTML = ''; 
+                userServers.forEach(server => {
+                    const card = document.createElement('div');
+                    card.className = 'bg-gray-800 bg-opacity-50 backdrop-blur-sm rounded-2xl aspect-square flex items-center justify-center cursor-pointer hover:ring-2 hover:ring-indigo-400 transition-all p-4';
+                    card.innerHTML = `<div class="text-center"><img src="${server.icon}" alt="${server.name}" class="w-16 h-16 rounded-full mx-auto mb-2"><p class="font-semibold text-white truncate">${server.name}</p></div>`;
+                    card.addEventListener('click', () => showSettingsForServer(server));
+                    serverGrid.appendChild(card);
+                });
+                serverGrid.appendChild(addServerCard);
+            } catch (error) { console.error('Failed to load user servers:', error); }
+        }
+
+        async function loadAndRenderModalServerList() {
+            try {
+                const [userServersRes, availableServersRes] = await Promise.all([
+                    fetch(`${API_BASE_URL}/api/user-servers`, fetchOptions),
+                    fetch(`${API_BASE_URL}/api/available-servers`, fetchOptions)
+                ]);
+                if (!userServersRes.ok || !availableServersRes.ok) throw new Error(`HTTP error!`);
+                const userServers = await userServersRes.json();
+                const allAvailableServers = await availableServersRes.json();
+                const userServerIds = new Set(userServers.map(s => s.id));
+                const filteredServers = allAvailableServers.filter(s => !userServerIds.has(s.id));
+
+                modalServerList.innerHTML = '';
+                if (filteredServers.length === 0) {
+                    modalServerList.innerHTML = `<p class="p-4 text-center text-gray-400">No new servers to add.</p>`;
                     return;
                 }
-                const user = await response.json();
-                isUserLoggedIn = true; // Set login state
-                document.getElementById('user-info').innerHTML = `
-                    <p class="font-bold text-white">${user.username}</p>
-                    <p class="text-xs text-gray-400">#${user.discriminator}</p>
-                `;
-            } catch(e) { 
-                isUserLoggedIn = false;
-                console.error("Could not fetch user info", e); 
+                filteredServers.forEach(server => {
+                    const item = document.createElement('div');
+                    item.className = 'flex items-center p-3 hover:bg-gray-700 rounded-lg cursor-pointer';
+                    item.innerHTML = `<img src="${server.icon}" alt="${server.name}" class="w-10 h-10 rounded-full mr-4"><span class="font-semibold">${server.name}</span>`;
+                    item.addEventListener('click', () => showSettingsForServer(server));
+                    modalServerList.appendChild(item);
+                });
+            } catch (error) { console.error('Failed to load available servers:', error); }
+        }
+        
+        async function removeServer(serverId) {
+            try {
+                const response = await fetch(`${API_BASE_URL}/api/remove-server/${serverId}`, { method: 'DELETE', ...fetchOptions });
+                if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+                removeConfirmModal.style.display = 'none';
+                await loadAndRenderServerDashboard();
+                showPage('server-dashboard');
+            } catch (error) { console.error('Failed to remove server:', error); }
+        }
+
+        async function saveSettingsForServer(server) {
+            const settings = {
+                server_name: server.name,
+                ai_model: document.getElementById('ai-model').value,
+                api_key: document.getElementById('api-key').value,
+                backup_api_key: document.getElementById('backup-api-key').value,
+                custom_name: document.getElementById('custom-name').value,
+                custom_personality: document.getElementById('custom-personality').value
+            };
+            saveSettingsBtn.textContent = 'Saving...';
+            saveSettingsBtn.disabled = true;
+            try {
+                const response = await fetch(`${API_BASE_URL}/api/server-settings/${server.id}`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(settings),
+                    ...fetchOptions
+                });
+                if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+                alert('Settings saved!');
+                await loadAndRenderServerDashboard();
+                showPage('server-dashboard');
+            } catch (error) {
+                console.error('Failed to save settings:', error);
+                alert('Could not save settings.');
+            } finally {
+                saveSettingsBtn.textContent = 'Save Settings';
+                saveSettingsBtn.disabled = false;
             }
+        }
+
+        function showSettingsForServer(server) {
+            currentServer = server;
+            document.getElementById('settings-server-icon').src = server.icon;
+            document.getElementById('settings-server-name').textContent = server.name;
+            document.getElementById('ai-model').value = '';
+            document.getElementById('api-key').value = '';
+            document.getElementById('backup-api-key').value = '';
+            document.getElementById('custom-name').value = '';
+            const personalityTextarea = document.getElementById('custom-personality');
+            personalityTextarea.value = '';
+            personalityTextarea.placeholder = "You are Evo. Your persona is that of a sharp-witted and humorous tomboy...";
+            updateKeyDisplay('api-key', 'api-key-display');
+            updateKeyDisplay('backup-api-key', 'backup-api-key-display');
+            premiumOverlay.style.display = 'flex';
+            premiumFields.classList.add('blur-md', 'pointer-events-none');
+            showPage('server-settings');
+        }
+
+        function updateKeyDisplay(inputId, displayId) {
+            const input = document.getElementById(inputId);
+            const display = document.getElementById(displayId);
+            if (input.value.length > 4) display.textContent = '...' + input.value.slice(-4);
+            else if (input.value.length > 0) display.textContent = '...';
+            else display.textContent = 'None';
         }
         
         // --- INITIALIZATION ---
@@ -348,10 +459,12 @@
             if (urlParams.get('loggedin') === 'true') {
                 history.pushState(null, '', window.location.pathname);
                 await updateUserInfo();
-                loadAndRenderServerDashboard();
-                showPage('server-dashboard');
+                if(isUserLoggedIn) {
+                    loadAndRenderServerDashboard();
+                    showPage('server-dashboard');
+                }
             } else {
-                await updateUserInfo(); // Check if already logged in
+                await updateUserInfo();
                 if (isUserLoggedIn) {
                     loadAndRenderServerDashboard();
                     showPage('server-dashboard');
@@ -360,9 +473,6 @@
                 }
             }
         });
-
-        // (rest of the script remains the same)
-        // ...
     </script>
 </body>
 </html>
