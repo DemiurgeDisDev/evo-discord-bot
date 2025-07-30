@@ -31,7 +31,6 @@ try:
         cred_json = json.loads(os.environ.get('FIREBASE_CREDENTIALS_JSON'))
         cred = credentials.Certificate(cred_json)
     else:
-        # This will use the GOOGLE_APPLICATION_CREDENTIALS file path
         cred = credentials.ApplicationDefault()
         
     firebase_admin.initialize_app(cred)
@@ -64,7 +63,6 @@ def decrypt_key(encrypted_key):
     return cipher_suite.decrypt(encrypted_key.encode()).decode()
 
 def get_user_guilds(token):
-    """Fetches the user's guilds from the Discord API."""
     discord = OAuth2Session(DISCORD_CLIENT_ID, token=token)
     response = discord.get(API_BASE_URL + '/users/@me/guilds')
     return response.json() if response.status_code == 200 else []
@@ -74,6 +72,25 @@ def get_user_guilds(token):
 @app.route('/')
 def home():
     return jsonify({"status": "online", "message": "Evo Backend is running successfully!"})
+
+# NEW: Route to get the bot's own info
+@app.route('/api/bot-info')
+def get_bot_info():
+    if not BOT_TOKEN: return jsonify({"error": "Bot token not configured"}), 500
+    headers = {"Authorization": f"Bot {BOT_TOKEN}"}
+    response = requests.get(f"{API_BASE_URL}/users/@me", headers=headers)
+    if response.status_code == 200:
+        bot_user = response.json()
+        avatar_hash = bot_user.get('avatar')
+        bot_id = bot_user.get('id')
+        if avatar_hash:
+            avatar_url = f"https://cdn.discordapp.com/avatars/{bot_id}/{avatar_hash}.png"
+        else:
+            # Default avatar if none is set
+            avatar_url = "https://cdn.discordapp.com/embed/avatars/0.png"
+        return jsonify({"avatar": avatar_url})
+    return jsonify({"error": "Failed to fetch bot info"}), 500
+
 
 # --- DISCORD OAUTH2 ROUTES ---
 @app.route('/login')
@@ -149,7 +166,6 @@ def remove_server(server_id):
     except Exception as e:
         return jsonify({"error": "Failed to remove server"}), 500
 
-# NEW: Get the channels for a specific server
 @app.route('/api/server-channels/<server_id>', methods=['GET'])
 def get_server_channels(server_id):
     if not session.get('user'): return jsonify({"error": "Not logged in"}), 401
@@ -160,14 +176,12 @@ def get_server_channels(server_id):
     
     if response.status_code == 200:
         all_channels = response.json()
-        # Filter for text channels only (type 0)
         text_channels = [{"id": ch["id"], "name": ch["name"]} for ch in all_channels if ch["type"] == 0]
         return jsonify(text_channels)
     else:
         print(f"Failed to fetch channels for {server_id}: {response.status_code} {response.text}")
         return jsonify({"error": "Failed to fetch channels. Is the bot on this server?"}), response.status_code
 
-# NEW: Get the saved settings for a server
 @app.route('/api/server-settings/<server_id>', methods=['GET'])
 def get_server_settings(server_id):
     if not session.get('user'): return jsonify({"error": "Not logged in"}), 401
@@ -178,12 +192,10 @@ def get_server_settings(server_id):
 
     if doc.exists:
         data = doc.to_dict()
-        # Decrypt keys and only return the last 4 characters for security
         api_key = decrypt_key(data.get("encrypted_api_key", ""))
         backup_key = decrypt_key(data.get("encrypted_backup_api_key", ""))
         data["api_key_last4"] = api_key[-4:] if api_key else ""
         data["backup_api_key_last4"] = backup_key[-4:] if backup_key else ""
-        # Remove encrypted keys before sending to frontend
         if "encrypted_api_key" in data: del data["encrypted_api_key"]
         if "encrypted_backup_api_key" in data: del data["encrypted_backup_api_key"]
         return jsonify(data)
@@ -200,19 +212,16 @@ def save_server_settings(server_id):
     server_ref = db.collection('server_configs').document(server_id)
     doc = server_ref.get()
 
-    # Prepare data for Firestore
     update_data = {
         "ai_model": settings.get('ai_model'),
         "designated_channel": settings.get('designated_channel')
     }
 
-    # Only update keys if a new value was provided
     if settings.get('api_key'):
         update_data["encrypted_api_key"] = encrypt_key(settings.get('api_key'))
     if settings.get('backup_api_key'):
         update_data["encrypted_backup_api_key"] = encrypt_key(settings.get('backup_api_key'))
     
-    # In the future, we'd check if the user is premium before saving these
     if 'custom_name' in settings and settings.get('custom_name'):
         update_data['custom_bot_name'] = settings.get('custom_name')
     if 'custom_personality' in settings and settings.get('custom_personality'):
@@ -228,7 +237,6 @@ def save_server_settings(server_id):
         print(f"Updating config for server {server_id}")
         server_ref.update(update_data)
     
-    print(f"Saved settings for server {server_id}")
     return jsonify({"status": "success", "message": f"Settings for server {server_id} saved."})
 
 # This part allows us to run the app.
