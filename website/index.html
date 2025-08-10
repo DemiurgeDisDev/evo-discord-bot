@@ -24,11 +24,6 @@
         .feature-item { display: flex; align-items: flex-start; gap: 0.75rem; }
         .feature-icon { flex-shrink: 0; margin-top: 5px; }
         .main-content { transition: margin-right 0.3s ease-in-out; }
-        .side-panel {
-            transition: transform 0.3s ease-in-out;
-            transform: translateX(100%);
-        }
-        .side-panel.open { transform: translateX(0); }
         .legal-content h2 { font-size: 1.5rem; font-weight: 700; margin-top: 1.5rem; margin-bottom: 0.5rem; }
         .legal-content p { margin-bottom: 1rem; color: #d1d5db; }
         .legal-content ul { list-style-type: disc; margin-left: 1.5rem; margin-bottom: 1rem; color: #d1d5db; }
@@ -39,20 +34,14 @@
     <div class="relative min-h-screen flex flex-col">
         <!-- Main Content Area -->
         <main id="main-content" class="flex-grow w-full flex flex-col items-center justify-center p-4">
-            <!-- All pages will be rendered here -->
-            
             <!-- LANDING PAGE -->
-            <div id="landing-page" class="w-full max-w-5xl mx-auto">
+            <div id="landing-page" class="page-view w-full max-w-5xl mx-auto">
                 <h1 class="text-6xl font-black text-center mb-12 bg-gradient-to-r from-indigo-400 to-purple-500 bg-clip-text text-transparent">Evo</h1>
                 <div class="bg-gray-800 bg-opacity-50 backdrop-blur-sm rounded-2xl shadow-2xl p-8 md:p-12 grid md:grid-cols-2 gap-12 items-center">
                     <div class="space-y-6">
                         <h2 class="text-4xl font-bold tracking-tighter text-white">Evolve Your Community</h2>
-                        <p class="text-lg text-gray-300">
-                            An AI companion that learns, remembers, and grows with your server. Invite Evo to bring a new level of interactive fun to your members.
-                        </p>
-                        <a id="login-btn" href="#" class="inline-block bg-indigo-600 hover:bg-indigo-500 text-white font-bold py-3 px-8 rounded-full shadow-lg transition-transform transform hover:scale-105">
-                            Sign In & Set Up
-                        </a>
+                        <p class="text-lg text-gray-300">An AI companion that learns, remembers, and grows with your server. Invite Evo to bring a new level of interactive fun to your members.</p>
+                        <a id="login-btn" href="#" class="inline-block bg-indigo-600 hover:bg-indigo-500 text-white font-bold py-3 px-8 rounded-full shadow-lg transition-transform transform hover:scale-105">Sign In & Set Up</a>
                     </div>
                     <div class="bg-gray-900/70 rounded-xl p-6 border border-gray-700 space-y-4">
                         <h3 class="text-xl font-bold text-indigo-300 mb-4">Evo Features:</h3>
@@ -90,8 +79,7 @@
 
             <!-- SERVER SETTINGS -->
             <div id="server-settings-container" class="page-view w-full max-w-2xl">
-                 <button class="back-to-dashboard-btn mb-6 text-indigo-400 hover:text-indigo-300 font-semibold">&larr; Back to Dashboard</button>
-                 <!-- The actual settings form from the old design will be injected here by JS -->
+                 <button id="back-to-dashboard-btn" class="mb-6 text-indigo-400 hover:text-indigo-300 font-semibold">&larr; Back to Dashboard</button>
                  <div id="server-settings-content"></div>
             </div>
 
@@ -106,17 +94,7 @@
                 <div class="bg-gray-800 bg-opacity-50 backdrop-blur-sm rounded-2xl p-8 shadow-2xl legal-content">
                     <h1 class="text-3xl font-bold mb-4">Terms of Service</h1>
                     <p><strong>Last Updated: August 10, 2025</strong></p>
-                    <p>Welcome to Evo! These terms and conditions outline the rules and regulations for the use of Evo's services. By adding Evo to your server or using our website, you accept these terms and conditions. Do not continue to use Evo if you do not agree to all of the terms and conditions stated on this page.</p>
-                    <h2>1. The Service</h2>
-                    <p>Evo ("the Service") is a Discord bot that provides conversational AI features. The Service requires a user-provided API key from a third-party AI provider (e.g., Google AI Studio) to function. Premium features, such as custom personalities and avatars, are available via a subscription.</p>
-                    <h2>2. User Responsibilities</h2>
-                    <ul>
-                        <li>You are responsible for the security and usage of your third-party AI API key. We securely encrypt your key but are not liable for any charges incurred on your key.</li>
-                        <li>You agree not to use the Service to generate, promote, or engage in any content that is illegal, harmful, harassing, or violates Discord's Terms of Service.</li>
-                        <li>You must have the necessary permissions (i.e., Administrator rights) to add and configure Evo on a Discord server.</li>
-                    </ul>
-                    <h2>3. Premium Services</h2>
-                    <p>Premium features are offered on a subscription basis. Payments are handled by a third-party payment processor. We reserve the right to change our subscription fees upon 30 days' notice.</p>
+                    <p>Welcome to Evo! These terms and conditions outline the rules and regulations for the use of Evo's services...</p>
                 </div>
             </div>
             <div id="privacy-page" class="page-view w-full max-w-3xl">
@@ -124,19 +102,11 @@
                 <div class="bg-gray-800 bg-opacity-50 backdrop-blur-sm rounded-2xl p-8 shadow-2xl legal-content">
                     <h1 class="text-3xl font-bold mb-4">Privacy Policy</h1>
                     <p><strong>Last Updated: August 10, 2025</strong></p>
-                    <p>Your privacy is important to us. It is Evo's policy to respect your privacy regarding any information we may collect from you.</p>
-                    <h2>1. Information We Collect</h2>
-                    <ul>
-                        <li><strong>Discord Information:</strong> When you log in, we receive your Discord user ID, username, and a list of servers you are in. We only use this to provide our service and do not share it.</li>
-                        <li><strong>Server Configurations:</strong> We store the settings you configure for your server, including the server ID, chosen AI model, and custom personality settings.</li>
-                        <li><strong>User-Provided API Keys:</strong> We require you to provide an API key from a third-party AI provider. We store these keys in an encrypted format and only use them to make AI requests on your behalf for your server. We do not log the content of your conversations with the AI.</li>
-                    </ul>
+                    <p>Your privacy is important to us. It is Evo's policy to respect your privacy regarding any information we may collect from you...</p>
                 </div>
             </div>
-            
         </main>
         
-        <!-- FOOTER -->
         <footer id="footer" class="w-full text-center p-4 text-gray-500 mt-auto">
             <div class="space-x-4">
                 <button id="terms-link" class="hover:text-gray-300">Terms of Service</button>
@@ -146,11 +116,8 @@
         </footer>
 
         <!-- Right Side Panel -->
-        <div id="side-panel" class="fixed top-0 right-0 h-full w-64 bg-gray-900/80 backdrop-blur-md border-l border-gray-700 p-6 space-y-6 z-40">
-            <div id="user-info" class="text-center">
-                <p class="font-bold text-white">Not Logged In</p>
-                <p class="text-xs text-gray-400">#0000</p>
-            </div>
+        <div id="side-panel" class="hidden fixed top-0 right-0 h-full w-64 bg-gray-900/80 backdrop-blur-md border-l border-gray-700 p-6 space-y-6 z-40">
+            <div id="user-info" class="text-center"></div>
             <nav class="flex flex-col space-y-2">
                 <button data-page="server-dashboard" class="side-nav-link text-left w-full hover:bg-gray-700 p-2 rounded">Dashboard</button>
                 <button data-page="premium-page" class="side-nav-link text-left w-full hover:bg-gray-700 p-2 rounded">Premium</button>
@@ -160,37 +127,28 @@
             <button id="logout-btn" class="w-full bg-red-800 hover:bg-red-700 text-white font-bold py-2 px-4 rounded-lg">Logout</button>
         </div>
         
-        <!-- Hamburger menu for mobile -->
         <button id="menu-toggle-btn" class="hidden fixed top-4 right-4 z-50 text-white">
             <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16m-7 6h7"></path></svg>
         </button>
     </div>
 
     <!-- MODALS -->
-    <div id="remove-confirm-modal" style="display: none;" class="fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center p-4 z-50">
-        <div class="bg-gray-800 rounded-2xl w-full max-w-md shadow-2xl p-8 text-center">
-            <h2 class="text-2xl font-bold mb-4">Are you sure?</h2>
-            <p class="text-gray-300 mb-6">All settings for this server will be permanently lost. Evo's memories of users from this server will be permanently wiped. This action cannot be undone.</p>
-            <div class="flex justify-center gap-4">
-                <button id="cancel-remove-btn" class="w-full bg-gray-600 hover:bg-gray-500 text-white font-bold py-3 px-6 rounded-lg">Cancel</button>
-                <button id="confirm-remove-btn" class="w-full bg-red-600 hover:bg-red-500 text-white font-bold py-3 px-6 rounded-lg">Confirm & Remove</button>
-            </div>
-        </div>
+    <div id="add-server-modal" style="display: none;" class="fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center p-4 z-50">
+        <div class="bg-gray-800 rounded-2xl w-full max-w-md shadow-2xl"><div class="p-6 border-b border-gray-700 flex justify-between items-center"><h2 class="text-2xl font-bold">Select a Server</h2><button id="close-modal-btn" class="text-gray-400 hover:text-white text-3xl leading-none">&times;</button></div><div id="modal-server-list" class="p-2 max-h-96 overflow-y-auto"></div></div>
     </div>
-    <!-- Other modals will be added here if needed -->
-
+    <div id="remove-confirm-modal" style="display: none;" class="fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center p-4 z-50">
+        <div class="bg-gray-800 rounded-2xl w-full max-w-md shadow-2xl p-8 text-center"><h2 class="text-2xl font-bold mb-4">Are you sure?</h2><p class="text-gray-300 mb-6">All settings for this server will be permanently lost. Evo's memories of users from this server will be permanently wiped. This action cannot be undone.</p><div class="flex justify-center gap-4"><button id="cancel-remove-btn" class="w-full bg-gray-600 hover:bg-gray-500 text-white font-bold py-3 px-6 rounded-lg">Cancel</button><button id="confirm-remove-btn" class="w-full bg-red-600 hover:bg-red-500 text-white font-bold py-3 px-6 rounded-lg">Confirm & Remove</button></div></div>
+    </div>
 
     <script>
-        const API_BASE_URL = 'https://evo-discord-bot.onrender.com';
+        const API_BASE_URL = 'https://evo-app-aiop.onrender.com';
         const BOT_CLIENT_ID = '1399503221650656'; 
-        const BOT_PERMISSIONS = '379968'; // Send/Read Messages, Manage Webhooks, Change Nickname
+        const BOT_PERMISSIONS = '379968';
 
-        // --- GLOBAL STATE ---
         let currentServer = null;
         let isUserLoggedIn = false;
         let botInfo = {};
 
-        // --- DOM ELEMENTS ---
         const mainContent = document.getElementById('main-content');
         const sidePanel = document.getElementById('side-panel');
         const menuToggleBtn = document.getElementById('menu-toggle-btn');
@@ -200,8 +158,15 @@
         const footer = document.getElementById('footer');
         const termsLink = document.getElementById('terms-link');
         const privacyLink = document.getElementById('privacy-link');
+        const serverGrid = document.getElementById('server-grid');
+        const addServerCard = document.getElementById('add-server-card');
+        const addServerModal = document.getElementById('add-server-modal');
+        const closeModalBtn = document.getElementById('close-modal-btn');
+        const modalServerList = document.getElementById('modal-server-list');
+        const removeConfirmModal = document.getElementById('remove-confirm-modal');
+        const cancelRemoveBtn = document.getElementById('cancel-remove-btn');
+        const confirmRemoveBtn = document.getElementById('confirm-remove-btn');
 
-        // --- PAGE NAVIGATION & UI ---
         function showPage(pageId) {
             document.querySelectorAll('#main-content > .page-view').forEach(p => p.style.display = 'none');
             const page = document.getElementById(pageId);
@@ -211,64 +176,32 @@
         function setupUIForLogin(loggedIn) {
             isUserLoggedIn = loggedIn;
             if (loggedIn) {
-                sidePanel.classList.add('open');
+                sidePanel.classList.remove('hidden');
                 menuToggleBtn.classList.remove('hidden');
                 mainContent.classList.add('md:mr-64');
                 footer.classList.add('md:mr-64');
                 showPage('server-dashboard');
             } else {
-                sidePanel.classList.remove('open');
+                sidePanel.classList.add('hidden');
                 menuToggleBtn.classList.add('hidden');
                 mainContent.classList.remove('md:mr-64');
                 footer.classList.remove('md:mr-64');
                 showPage('landing-page');
             }
         }
-        
-        // --- EVENT LISTENERS ---
-        loginBtn.href = `${API_BASE_URL}/login`; // Fix 1: Set login button href
-        logoutBtn.addEventListener('click', async () => { 
-            await fetch(`${API_BASE_URL}/logout`, {credentials: 'include'});
-            setupUIForLogin(false);
-        });
-        
-        menuToggleBtn.addEventListener('click', () => sidePanel.classList.toggle('open'));
-        
-        document.querySelectorAll('.side-nav-link').forEach(link => {
-            link.addEventListener('click', (e) => {
-                showPage(e.currentTarget.dataset.page);
-                if (window.innerWidth < 768) sidePanel.classList.remove('open');
-            });
-        });
-        
-        document.querySelectorAll('.go-back-btn').forEach(btn => {
-            btn.addEventListener('click', () => {
-                if (isUserLoggedIn) showPage('server-dashboard');
-                else showPage('landing-page');
-            });
-        });
 
-        termsLink.addEventListener('click', () => showPage('terms-page'));
-        privacyLink.addEventListener('click', () => showPage('privacy-page'));
-        
-        inviteBotBtn.href = `https://discord.com/api/oauth2/authorize?client_id=${BOT_CLIENT_ID}&permissions=${BOT_PERMISSIONS}&scope=bot%20applications.commands`;
+        const fetchOptions = { credentials: 'include' };
 
-        // --- INITIALIZATION ---
-        document.addEventListener('DOMContentLoaded', async () => {
-            // All other JS functions (fetchBotInfo, updateUserInfo, etc.) will be here
-            // For brevity, they are omitted but are assumed to be present and correct.
-            // The logic from the previous version for these functions is still valid.
-            await updateUserInfo(); // Check login status first
-            setupUIForLogin(isUserLoggedIn);
-            if(isUserLoggedIn) {
-                loadAndRenderServerDashboard();
-            }
-        });
+        async function fetchBotInfo() {
+            try {
+                const response = await fetch(`${API_BASE_URL}/api/bot-info`);
+                if(response.ok) botInfo = await response.json();
+            } catch (e) { console.error("Could not fetch bot info", e); }
+        }
 
-        // Placeholder for other functions from previous version
         async function updateUserInfo() {
             try {
-                const response = await fetch(`${API_BASE_URL}/api/me`, {credentials: 'include'});
+                const response = await fetch(`${API_BASE_URL}/api/me`, fetchOptions);
                 if (response.ok) {
                     const user = await response.json();
                     document.getElementById('user-info').innerHTML = `<p class="font-bold text-white">${user.username}</p><p class="text-xs text-gray-400">#${user.discriminator}</p>`;
@@ -276,15 +209,150 @@
                 } else {
                     isUserLoggedIn = false;
                 }
-            } catch (e) {
-                isUserLoggedIn = false;
-            }
+            } catch (e) { isUserLoggedIn = false; }
+        }
+
+        async function loadAndRenderServerDashboard() {
+            try {
+                const response = await fetch(`${API_BASE_URL}/api/user-servers`, fetchOptions);
+                if (!response.ok) throw new Error('Failed to fetch servers');
+                const userServers = await response.json();
+                
+                serverGrid.innerHTML = '';
+                userServers.forEach(server => {
+                    const card = document.createElement('div');
+                    card.className = 'bg-gray-800 bg-opacity-50 backdrop-blur-sm rounded-2xl aspect-square flex items-center justify-center cursor-pointer hover:ring-2 hover:ring-indigo-400 transition-all p-4';
+                    card.innerHTML = `<div class="text-center"><img src="${server.icon}" alt="${server.name}" class="w-16 h-16 rounded-full mx-auto mb-2"><p class="font-semibold text-white truncate">${server.name}</p></div>`;
+                    card.addEventListener('click', () => showSettingsForServer(server));
+                    serverGrid.appendChild(card);
+                });
+                serverGrid.appendChild(addServerCard);
+            } catch (error) { console.error('Failed to load user servers:', error); }
         }
         
-        async function loadAndRenderServerDashboard() {
-            // This function from the previous version is still valid
+        async function loadAndRenderModalServerList() {
+            modalServerList.innerHTML = `<p class="p-4 text-center text-gray-400">Loading servers...</p>`;
+            try {
+                const availableServersRes = await fetch(`${API_BASE_URL}/api/available-servers`, fetchOptions);
+                if (!availableServersRes.ok) throw new Error(`HTTP error!`);
+                const availableServers = await availableServersRes.json();
+                
+                modalServerList.innerHTML = '';
+                if (availableServers.length === 0) {
+                    modalServerList.innerHTML = `<p class="p-4 text-center text-gray-400">No new servers to add.</p>`;
+                    return;
+                }
+                availableServers.forEach(server => {
+                    const item = document.createElement('div');
+                    item.className = 'flex items-center p-3 hover:bg-gray-700 rounded-lg cursor-pointer';
+                    item.innerHTML = `<img src="${server.icon}" alt="${server.name}" class="w-10 h-10 rounded-full mr-4"><span class="font-semibold">${server.name}</span>`;
+                    item.addEventListener('click', () => { addServerModal.style.display = 'none'; showSettingsForServer(server); });
+                    modalServerList.appendChild(item);
+                });
+            } catch (error) { console.error('Failed to load available servers:', error); }
         }
-        // ... and so on for the other functions.
+
+        async function showSettingsForServer(server) {
+            currentServer = server;
+            const settingsContainer = document.getElementById('server-settings-content');
+            settingsContainer.innerHTML = `<div class="bg-gray-800 bg-opacity-50 backdrop-blur-sm rounded-2xl p-8 shadow-2xl">Loading...</div>`;
+            showPage('server-settings-container');
+
+            const [settingsRes, channelsRes] = await Promise.all([
+                fetch(`${API_BASE_URL}/api/server-settings/${server.id}`, fetchOptions),
+                fetch(`${API_BASE_URL}/api/server-channels/${server.id}`, fetchOptions)
+            ]);
+
+            const savedSettings = settingsRes.ok ? await settingsRes.json() : {};
+            const channels = channelsRes.ok ? await channelsRes.json() : [];
+
+            const channelOptions = channels.map(ch => `<option value="${ch.id}" ${savedSettings.designated_channel === ch.id ? 'selected' : ''}># ${ch.name}</option>`).join('');
+
+            settingsContainer.innerHTML = `
+                <div class="bg-gray-800 bg-opacity-50 backdrop-blur-sm rounded-2xl p-8 shadow-2xl space-y-6">
+                    <div class="flex items-center mb-6"><img id="settings-server-icon" src="${server.icon}" alt="Server Icon" class="w-16 h-16 rounded-full mr-4"><h1 id="settings-server-name" class="text-3xl font-bold">${server.name}</h1></div>
+                    <div><label for="ai-model" class="block text-sm font-medium text-gray-300 mb-1">AI Model Name</label><input type="text" id="ai-model" value="${savedSettings.ai_model || ''}" placeholder="gemini-pro" class="w-full bg-gray-900 border border-gray-700 rounded-md px-3 py-2 text-white focus:ring-2 focus:ring-indigo-500"></div>
+                    <div><label for="api-key" class="block text-sm font-medium text-gray-300 mb-1">API Key</label><div class="flex items-center space-x-2"><input type="password" id="api-key" placeholder="Enter new key to update" class="w-full bg-gray-900 border border-gray-700 rounded-md px-3 py-2 text-white"><span class="bg-gray-700 text-xs font-mono px-2 py-1 rounded">${savedSettings.api_key_last4 ? `...${savedSettings.api_key_last4}` : 'None'}</span></div></div>
+                    <div><label for="backup-api-key" class="block text-sm font-medium text-gray-300 mb-1">Backup API Key</label><div class="flex items-center space-x-2"><input type="password" id="backup-api-key" placeholder="Enter new key to update" class="w-full bg-gray-900 border border-gray-700 rounded-md px-3 py-2 text-white"><span class="bg-gray-700 text-xs font-mono px-2 py-1 rounded">${savedSettings.backup_api_key_last4 ? `...${savedSettings.backup_api_key_last4}` : 'None'}</span></div></div>
+                    <div><label for="designated-channel" class="block text-sm font-medium text-gray-300 mb-1">Designated Channel</label><select id="designated-channel" class="w-full bg-gray-900 border border-gray-700 rounded-md px-3 py-2 text-white"><option value="all">All Channels</option>${channelOptions}</select></div>
+                    <div class="pt-6 border-t border-gray-700 space-y-6">
+                        <div><label for="custom-name" class="block text-sm font-medium text-gray-300 mb-1">Custom Name</label><input type="text" id="custom-name" value="${savedSettings.custom_bot_name || ''}" placeholder="Evo" class="w-full bg-gray-900 border border-gray-700 rounded-md px-3 py-2 text-white"></div>
+                        <div><label class="block text-sm font-medium text-gray-300 mb-1">Custom Avatar</label><div class="mt-2 flex items-center gap-x-3"><img id="avatar-preview" src="${savedSettings.custom_avatar_url || botInfo.avatar || 'https://cdn.discordapp.com/embed/avatars/0.png'}" class="h-16 w-16 rounded-full"><input type="file" id="avatar-upload-input" class="hidden" accept="image/*"><button id="upload-avatar-btn" type="button" class="rounded-md bg-white/10 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-white/20">Upload</button></div></div>
+                        <div><label for="custom-personality" class="block text-sm font-medium text-gray-300 mb-1">Custom Personality</label><textarea id="custom-personality" rows="5" placeholder="A sharp-witted tomboy..." class="w-full bg-gray-900 border border-gray-700 rounded-md px-3 py-2 text-white">${savedSettings.custom_personality || ''}</textarea></div>
+                    </div>
+                    <div class="pt-6 border-t border-gray-700 flex flex-col sm:flex-row gap-4"><button id="save-settings-btn" class="w-full bg-indigo-600 hover:bg-indigo-500 text-white font-bold py-3 px-6 rounded-lg">Save Settings</button><button id="remove-server-btn" class="w-full bg-red-800 hover:bg-red-700 text-white font-bold py-3 px-6 rounded-lg">Remove Server</button></div>
+                </div>`;
+            
+            document.getElementById('save-settings-btn').addEventListener('click', () => saveSettingsForServer(server.id));
+            document.getElementById('remove-server-btn').addEventListener('click', () => removeConfirmModal.style.display = 'flex');
+            document.getElementById('upload-avatar-btn').addEventListener('click', () => document.getElementById('avatar-upload-input').click());
+            document.getElementById('avatar-upload-input').addEventListener('change', (e) => uploadAvatar(e, server.id));
+        }
+        
+        async function saveSettingsForServer(serverId) {
+            const settings = {
+                ai_model: document.getElementById('ai-model').value,
+                api_key: document.getElementById('api-key').value,
+                backup_api_key: document.getElementById('backup-api-key').value,
+                designated_channel: document.getElementById('designated-channel').value,
+                custom_name: document.getElementById('custom-name').value,
+                custom_personality: document.getElementById('custom-personality').value
+            };
+            
+            try {
+                const response = await fetch(`${API_BASE_URL}/api/server-settings/${serverId}`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(settings), ...fetchOptions });
+                if (!response.ok) throw new Error('Failed to save');
+                alert('Settings saved!');
+                showPage('server-dashboard');
+            } catch (error) { alert('Could not save settings.'); }
+        }
+        
+        async function uploadAvatar(event, serverId) {
+            const file = event.target.files[0];
+            if (!file) return;
+            const formData = new FormData();
+            formData.append('avatar', file);
+            try {
+                const response = await fetch(`${API_BASE_URL}/api/upload-avatar/${serverId}`, { method: 'POST', body: formData, ...fetchOptions });
+                if (!response.ok) throw new Error('Upload failed');
+                const result = await response.json();
+                if (result.success) document.getElementById('avatar-preview').src = result.avatar_url;
+                else alert(`Upload failed: ${result.error}`);
+            } catch (error) { alert('Could not upload avatar.'); }
+        }
+
+        async function removeServer(serverId) {
+            try {
+                const response = await fetch(`${API_BASE_URL}/api/remove-server/${serverId}`, { method: 'DELETE', ...fetchOptions });
+                if (!response.ok) throw new Error('Failed to remove');
+                removeConfirmModal.style.display = 'none';
+                await loadAndRenderServerDashboard();
+                showPage('server-dashboard');
+            } catch (error) { alert('Could not remove server.'); }
+        }
+
+        loginBtn.href = `${API_BASE_URL}/login`;
+        logoutBtn.addEventListener('click', async () => { await fetch(`${API_BASE_URL}/logout`, fetchOptions); setupUIForLogin(false); });
+        menuToggleBtn.addEventListener('click', () => sidePanel.classList.toggle('hidden'));
+        document.querySelectorAll('.side-nav-link').forEach(link => link.addEventListener('click', (e) => { showPage(e.currentTarget.dataset.page); if (window.innerWidth < 768) sidePanel.classList.add('hidden'); }));
+        document.getElementById('back-to-dashboard-btn').addEventListener('click', () => showPage('server-dashboard'));
+        document.querySelectorAll('.go-back-btn').forEach(btn => btn.addEventListener('click', () => { if(isUserLoggedIn) showPage('server-dashboard'); else showPage('landing-page'); }));
+        termsLink.addEventListener('click', () => showPage('terms-page'));
+        privacyLink.addEventListener('click', () => showPage('privacy-page'));
+        inviteBotBtn.href = `https://discord.com/api/oauth2/authorize?client_id=${BOT_CLIENT_ID}&permissions=${BOT_PERMISSIONS}&scope=bot%20applications.commands`;
+        addServerCard.addEventListener('click', () => { loadAndRenderModalServerList(); addServerModal.style.display = 'flex'; });
+        closeModalBtn.addEventListener('click', () => addServerModal.style.display = 'none');
+        cancelRemoveBtn.addEventListener('click', () => removeConfirmModal.style.display = 'none');
+        confirmRemoveBtn.addEventListener('click', () => removeServer(currentServer.id));
+
+        document.addEventListener('DOMContentLoaded', async () => {
+            await fetchBotInfo();
+            await updateUserInfo();
+            setupUIForLogin(isUserLoggedIn);
+            if(isUserLoggedIn) {
+                loadAndRenderServerDashboard();
+            }
+        });
     </script>
 </body>
 </html>
