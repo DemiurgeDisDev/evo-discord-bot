@@ -6,6 +6,7 @@ from requests_oauthlib import OAuth2Session
 import firebase_admin
 from firebase_admin import credentials, firestore
 from cryptography.fernet import Fernet
+import traceback
 
 # --- INITIALIZATION ---
 app = Flask(__name__)
@@ -18,9 +19,8 @@ DISCORD_REDIRECT_URI = os.getenv('DISCORD_REDIRECT_URI')
 FRONTEND_URL = os.getenv('FRONTEND_URL')
 ENCRYPTION_KEY = os.getenv('ENCRYPTION_KEY')
 BOT_TOKEN = os.getenv('BOT_TOKEN')
-IMGBB_API_KEY = os.getenv('IMGBB_API_KEY') # API key for imgbb
+IMGBB_API_KEY = os.getenv('IMGBB_API_KEY')
 
-# Ensure encryption key is loaded
 if not ENCRYPTION_KEY:
     raise ValueError("ENCRYPTION_KEY not found in environment variables.")
 cipher_suite = Fernet(ENCRYPTION_KEY.encode())
@@ -32,6 +32,7 @@ try:
         cred_json = json.loads(os.environ.get('FIREBASE_CREDENTIALS_JSON'))
         cred = credentials.Certificate(cred_json)
     else:
+        # This path is for local development, Render uses the environment variable.
         cred = credentials.ApplicationDefault()
         
     firebase_admin.initialize_app(cred)
@@ -61,7 +62,10 @@ def encrypt_key(key):
 
 def decrypt_key(encrypted_key):
     if not encrypted_key: return ""
-    return cipher_suite.decrypt(encrypted_key.encode()).decode()
+    try:
+        return cipher_suite.decrypt(encrypted_key.encode()).decode()
+    except Exception:
+        return ""
 
 def get_user_guilds(token):
     discord = OAuth2Session(DISCORD_CLIENT_ID, token=token)
@@ -103,45 +107,27 @@ def get_bot_info():
 
 @app.route('/api/upload-avatar/<server_id>', methods=['POST'])
 def upload_avatar(server_id):
-    if not session.get('user'):
-        return jsonify({"error": "Not logged in"}), 401
-    if 'avatar' not in request.files:
-        return jsonify({"error": "No file part"}), 400
-
+    if not session.get('user'): return jsonify({"error": "Not logged in"}), 401
+    if 'avatar' not in request.files: return jsonify({"error": "No file part"}), 400
     file = request.files['avatar']
-    if file.filename == '':
-        return jsonify({"error": "No selected file"}), 400
-
-    if not IMGBB_API_KEY:
-        return jsonify({"error": "imgbb API key not configured on the server"}), 500
+    if file.filename == '': return jsonify({"error": "No selected file"}), 400
+    if not IMGBB_API_KEY: return jsonify({"error": "imgbb API key not configured on the server"}), 500
 
     imgbb_api_url = "https://api.imgbb.com/1/upload"
     payload = {"key": IMGBB_API_KEY}
     
     try:
-        response = requests.post(
-            imgbb_api_url,
-            params=payload,
-            files={"image": file}
-        )
+        response = requests.post(imgbb_api_url, params=payload, files={"image": file})
         response.raise_for_status()
         imgbb_data = response.json()
-
         if imgbb_data.get('success'):
             avatar_url = imgbb_data['data']['url']
-            db.collection('server_configs').document(server_id).update({
-                "custom_avatar_url": avatar_url
-            })
+            db.collection('server_configs').document(server_id).update({"custom_avatar_url": avatar_url})
             return jsonify({"success": True, "avatar_url": avatar_url})
         else:
-            error_message = imgbb_data.get('error', {}).get('message', 'imgbb API returned an error')
-            return jsonify({"error": error_message}), 500
-
-    except requests.exceptions.RequestException as e:
-        print(f"Error calling imgbb API: {e}")
-        return jsonify({"error": f"Failed to upload to imgbb: {e}"}), 500
+            return jsonify({"error": imgbb_data.get('error', {}).get('message', 'imgbb API returned an error')}), 500
     except Exception as e:
-        return jsonify({"error": f"An unexpected error occurred: {e}"}), 500
+        return jsonify({"error": f"Failed to upload image: {e}"}), 500
 
 # --- DISCORD OAUTH2 ROUTES ---
 @app.route('/login')
@@ -154,13 +140,43 @@ def login():
 
 @app.route('/callback')
 def callback():
-    discord = OAuth2Session(DISCORD_CLIENT_ID, state=session.get('oauth2_state'), redirect_uri=DISCORD_REDIRECT_URI)
-    token = discord.fetch_token(TOKEN_URL, client_secret=DISCORD_CLIENT_SECRET, authorization_response=request.url)
-    session['discord_token'] = token
-    user_info_response = discord.get(API_BASE_URL + '/users/@me')
-    user_info = user_info_response.json()
-    session['user'] = user_info
-    return redirect(f"{FRONTEND_URL}/?loggedin=true")
+    try:
+        if 'error' in request.args:
+            error_description = request.args.get('error_description', 'No description provided.')
+            print(f"Discord returned an error on callback: {request.args['error']} - {error_description}")
+            return f"An error occurred during authentication: {error_description}", 400
+
+        session_state = session.get('oauth2_state')
+        request_state = request.args.get('state')
+
+        if not session_state or session_state != request_state:
+            print(f"State mismatch error. Session state: {session_state}, Request state: {request_state}")
+            return "State mismatch. Please try logging in again.", 400
+
+        discord = OAuth2Session(DISCORD_CLIENT_ID, state=session_state, redirect_uri=DISCORD_REDIRECT_URI)
+        
+        print("Attempting to fetch token from Discord...")
+        token = discord.fetch_token(
+            TOKEN_URL,
+            client_secret=DISCORD_CLIENT_SECRET,
+            authorization_response=request.url
+        )
+        
+        print("Token fetched successfully.")
+        session['discord_token'] = token
+        
+        user_info_response = discord.get(API_BASE_URL + '/users/@me')
+        user_info_response.raise_for_status()
+        user_info = user_info_response.json()
+        session['user'] = user_info
+        
+        return redirect(f"{FRONTEND_URL}/?loggedin=true")
+
+    except Exception as e:
+        print("--- AN ERROR OCCURRED IN /callback ---")
+        traceback.print_exc()
+        print("--------------------------------------")
+        return "An internal server error occurred during authentication.", 500
 
 @app.route('/logout')
 def logout():
@@ -199,7 +215,6 @@ def get_available_servers():
     if not db: return jsonify({"error": "Database not connected"}), 500
     
     user_guilds = get_user_guilds(session.get('discord_token'))
-    
     configs_ref = db.collection('server_configs').stream()
     configured_guild_ids = {config.id for config in configs_ref}
     
@@ -217,9 +232,7 @@ def remove_server(server_id):
     if not session.get('user'): return jsonify({"error": "Not logged in"}), 401
     if not db: return jsonify({"error": "Database not connected"}), 500
     try:
-        # This is a simplified deletion. A full implementation would delete subcollections.
         db.collection('server_configs').document(server_id).delete()
-        print(f"Removed server config: {server_id}")
         return jsonify({"status": "success"})
     except Exception as e:
         return jsonify({"error": "Failed to remove server"}), 500
@@ -234,11 +247,9 @@ def get_server_channels(server_id):
     
     if response.status_code == 200:
         all_channels = response.json()
-        # Point 2: Ensure we only get text channels
         text_channels = [{"id": ch["id"], "name": ch["name"]} for ch in all_channels if ch["type"] == 0]
         return jsonify(text_channels)
     else:
-        print(f"Failed to fetch channels for {server_id}: {response.status_code} {response.text}")
         return jsonify({"error": "Failed to fetch channels. Is the bot on this server?"}), response.status_code
 
 @app.route('/api/server-settings/<server_id>', methods=['GET'])
@@ -269,7 +280,6 @@ def save_server_settings(server_id):
     settings = request.json
     server_ref = db.collection('server_configs').document(server_id)
     
-    # Point 1: Ensure all settings are updated
     update_data = {
         "ai_model": settings.get('ai_model'),
         "designated_channel": settings.get('designated_channel'),
