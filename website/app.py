@@ -146,30 +146,39 @@ def callback():
             print(f"Discord returned an error on callback: {request.args['error']} - {error_description}")
             return f"An error occurred during authentication: {error_description}", 400
 
-        session_state = session.get('oauth2_state')
-        request_state = request.args.get('state')
-
-        if not session_state or session_state != request_state:
-            print(f"State mismatch error. Session state: {session_state}, Request state: {request_state}")
+        if session.get('oauth2_state') != request.args.get('state'):
             return "State mismatch. Please try logging in again.", 400
 
-        discord = OAuth2Session(DISCORD_CLIENT_ID, state=session_state, redirect_uri=DISCORD_REDIRECT_URI)
-        
-        # FIX: Manually extract the code and pass it directly to fetch_token
         code = request.args.get('code')
         if not code:
             return "Missing authorization code from Discord.", 400
 
-        print("Attempting to fetch token from Discord...")
-        token = discord.fetch_token(
-            TOKEN_URL,
-            client_secret=DISCORD_CLIENT_SECRET,
-            code=code # Use the explicit code parameter
-        )
+        # --- MANUAL TOKEN EXCHANGE ---
+        data = {
+            'client_id': DISCORD_CLIENT_ID,
+            'client_secret': DISCORD_CLIENT_SECRET,
+            'grant_type': 'authorization_code',
+            'code': code,
+            'redirect_uri': DISCORD_REDIRECT_URI
+        }
+        headers = {
+            'Content-Type': 'application/x-www-form-urlencoded'
+        }
         
-        print("Token fetched successfully.")
+        print("Manually posting to Discord token URL with data:", data)
+        token_response = requests.post(TOKEN_URL, data=data, headers=headers)
+        
+        # Log the raw response from Discord
+        print(f"Discord token response status: {token_response.status_code}")
+        print(f"Discord token response body: {token_response.text}")
+        
+        token_response.raise_for_status() # Raise an exception for bad status codes
+        token = token_response.json()
+        
         session['discord_token'] = token
         
+        # Use the token to get user info
+        discord = OAuth2Session(DISCORD_CLIENT_ID, token=token)
         user_info_response = discord.get(API_BASE_URL + '/users/@me')
         user_info_response.raise_for_status()
         user_info = user_info_response.json()
@@ -305,4 +314,3 @@ def save_server_settings(server_id):
 if __name__ == "__main__":
     port = int(os.environ.get('PORT', 8080))
     app.run(host='0.0.0.0', port=port)
-
