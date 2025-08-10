@@ -155,16 +155,16 @@ def callback():
 
         discord = OAuth2Session(DISCORD_CLIENT_ID, state=session_state, redirect_uri=DISCORD_REDIRECT_URI)
         
-        # FIX: Ensure the callback URL uses https when running behind a proxy
-        authorization_response = request.url
-        if authorization_response.startswith('http://'):
-            authorization_response = 'https://' + authorization_response[7:]
+        # FIX: Manually extract the code and pass it directly to fetch_token
+        code = request.args.get('code')
+        if not code:
+            return "Missing authorization code from Discord.", 400
 
         print("Attempting to fetch token from Discord...")
         token = discord.fetch_token(
             TOKEN_URL,
             client_secret=DISCORD_CLIENT_SECRET,
-            authorization_response=authorization_response
+            code=code # Use the explicit code parameter
         )
         
         print("Token fetched successfully.")
@@ -305,3 +305,4 @@ def save_server_settings(server_id):
 if __name__ == "__main__":
     port = int(os.environ.get('PORT', 8080))
     app.run(host='0.0.0.0', port=port)
+
