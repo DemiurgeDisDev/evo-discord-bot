@@ -217,6 +217,7 @@ def remove_server(server_id):
     if not session.get('user'): return jsonify({"error": "Not logged in"}), 401
     if not db: return jsonify({"error": "Database not connected"}), 500
     try:
+        # This is a simplified deletion. A full implementation would delete subcollections.
         db.collection('server_configs').document(server_id).delete()
         print(f"Removed server config: {server_id}")
         return jsonify({"status": "success"})
@@ -233,6 +234,7 @@ def get_server_channels(server_id):
     
     if response.status_code == 200:
         all_channels = response.json()
+        # Point 2: Ensure we only get text channels
         text_channels = [{"id": ch["id"], "name": ch["name"]} for ch in all_channels if ch["type"] == 0]
         return jsonify(text_channels)
     else:
@@ -266,32 +268,21 @@ def save_server_settings(server_id):
 
     settings = request.json
     server_ref = db.collection('server_configs').document(server_id)
-    doc = server_ref.get()
-
+    
+    # Point 1: Ensure all settings are updated
     update_data = {
         "ai_model": settings.get('ai_model'),
-        "designated_channel": settings.get('designated_channel')
+        "designated_channel": settings.get('designated_channel'),
+        'custom_bot_name': settings.get('custom_name'),
+        'custom_personality': settings.get('custom_personality')
     }
 
     if settings.get('api_key'):
         update_data["encrypted_api_key"] = encrypt_key(settings.get('api_key'))
     if settings.get('backup_api_key'):
         update_data["encrypted_backup_api_key"] = encrypt_key(settings.get('backup_api_key'))
-    
-    if 'custom_name' in settings and settings.get('custom_name'):
-        update_data['custom_bot_name'] = settings.get('custom_name')
-    if 'custom_personality' in settings and settings.get('custom_personality'):
-        update_data['custom_personality'] = settings.get('custom_personality')
 
-    if not doc.exists:
-        print(f"Creating new config for server {server_id}")
-        update_data["server_name"] = settings.get('server_name')
-        update_data["user_premium"] = False
-        update_data["server_premium"] = False
-        server_ref.set(update_data)
-    else:
-        print(f"Updating config for server {server_id}")
-        server_ref.update(update_data)
+    server_ref.set(update_data, merge=True)
     
     return jsonify({"status": "success", "message": f"Settings for server {server_id} saved."})
 
@@ -299,4 +290,3 @@ def save_server_settings(server_id):
 if __name__ == "__main__":
     port = int(os.environ.get('PORT', 8080))
     app.run(host='0.0.0.0', port=port)
-
