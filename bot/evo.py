@@ -1,4 +1,5 @@
 import discord
+from discord import app_commands
 import os
 import json
 import asyncio
@@ -18,6 +19,7 @@ load_dotenv()
 DISCORD_BOT_TOKEN = os.getenv('DISCORD_BOT_TOKEN')
 ENCRYPTION_KEY = os.getenv('ENCRYPTION_KEY')
 FIREBASE_CREDENTIALS_JSON = os.getenv('FIREBASE_CREDENTIALS_JSON')
+WEBSITE_URL = "https://evo-discord-bot.onrender.com/" # Your website URL
 
 if not all([DISCORD_BOT_TOKEN, ENCRYPTION_KEY, FIREBASE_CREDENTIALS_JSON]):
     raise ValueError("One or more critical environment variables are missing.")
@@ -49,7 +51,15 @@ intents.message_content = True
 intents.guilds = True
 intents.members = True
 
-bot = discord.Client(intents=intents)
+class EvoClient(discord.Client):
+    def __init__(self, *, intents: discord.Intents):
+        super().__init__(intents=intents)
+        self.tree = app_commands.CommandTree(self)
+
+    async def setup_hook(self):
+        await self.tree.sync()
+
+bot = EvoClient(intents=intents)
 
 # ==================================================================================
 # 2. HELPER FUNCTIONS
@@ -67,74 +77,103 @@ async def get_or_create_webhook(channel):
             return webhook
     return await channel.create_webhook(name=f"{bot.user.name}'s Webhook")
 
-async def update_summaries(model, memory_ref, user_name, conversation_exchange, old_personal_summary, old_gossip_summary):
-    """
-    After a conversation, this function asks the AI to reflect on the exchange
-    and update its summaries about the user.
-    """
-    print(f"Starting reflection for user: {user_name}")
+async def update_summaries(model, memory_ref, user_name, conversation_exchange, old_personal_summary):
+    print(f"Starting personal summary reflection for user: {user_name}")
     try:
-        # --- Update Personal Summary ---
         personal_summary_prompt = f"""
         You are a memory assistant. Your job is to update a user summary based on a new conversation.
         The user's name is {user_name}.
-        Here is the old summary of the user:
-        ---
-        {old_personal_summary}
-        ---
-        Here is the latest conversation exchange:
-        ---
-        {conversation_exchange}
-        ---
+        Here is the old summary of the user: --- {old_personal_summary} ---
+        Here is the latest conversation exchange: --- {conversation_exchange} ---
         Based on this new information, provide an updated summary of the user. The summary should be a concise paragraph, written in the third person.
         Keep the summary under 200 words. If no new important personal information was learned, just return the original summary.
         """
-        
         personal_response = await model.generate_content_async(personal_summary_prompt)
         new_personal_summary = personal_response.text
+        await asyncio.to_thread(memory_ref.set, {'personal_summary': new_personal_summary}, merge=True)
+        print(f"Successfully updated personal summary for {user_name}.")
+    except Exception as e:
+        print(f"Could not update personal summary for {user_name}. Error: {e}")
 
-        # --- Update Gossip Summary ---
-        # This is a simplified version. A more complex one would parse mentioned users.
-        gossip_summary_prompt = f"""
-        You are a memory assistant. Your job is to update a "gossip" summary based on a new conversation.
-        The user's name is {user_name}.
-        Here is the old gossip summary about the user (things they've said about others, or general noteworthy comments):
+async def update_gossip_summary(model, server_id, mentioned_user, author_name, message_content):
+    print(f"Starting gossip reflection for mentioned user: {mentioned_user.display_name}")
+    try:
+        gossip_memory_ref = db.collection('memories').document(server_id).collection('users').document(str(mentioned_user.id))
+        gossip_memory_doc = gossip_memory_ref.get()
+        gossip_memory = gossip_memory_doc.to_dict() if gossip_memory_doc.exists else {}
+        old_gossip_summary = gossip_memory.get('gossip_summary', 'No gossip available.')
+
+        gossip_prompt = f"""
+        You are a memory assistant. You are listening to a conversation.
+        The user '{author_name}' just said the following about '{mentioned_user.display_name}':
+        ---
+        {message_content}
+        ---
+        Here is the old gossip summary you have about '{mentioned_user.display_name}':
         ---
         {old_gossip_summary}
         ---
-        Here is the latest conversation exchange:
-        ---
-        {conversation_exchange}
-        ---
-        Based on this new information, provide an updated gossip summary. The summary should be a concise paragraph.
-        Keep the summary under 200 words. If no new important gossip was learned, just return the original summary.
+        Based on what '{author_name}' said, provide an updated gossip summary for '{mentioned_user.display_name}'.
+        Keep the summary under 200 words. If no new important information was learned, just return the original summary.
         """
-        gossip_response = await model.generate_content_async(gossip_summary_prompt)
+        gossip_response = await model.generate_content_async(gossip_prompt)
         new_gossip_summary = gossip_response.text
-
-        # Save the updated summaries to Firebase
-        await asyncio.to_thread(
-            memory_ref.set,
-            {'personal_summary': new_personal_summary, 'gossip_summary': new_gossip_summary},
-            merge=True
-        )
-        print(f"Successfully updated summaries for {user_name}.")
-
+        await asyncio.to_thread(gossip_memory_ref.set, {'gossip_summary': new_gossip_summary}, merge=True)
+        print(f"Successfully updated gossip summary for {mentioned_user.display_name}.")
     except Exception as e:
-        print(f"Could not update summaries for {user_name}. Error: {e}")
+        print(f"Could not update gossip summary for {mentioned_user.display_name}. Error: {e}")
 
 # ==================================================================================
-# 3. DISCORD EVENTS
+# 3. SLASH COMMANDS
+# ==================================================================================
+
+@bot.tree.command(name="evo", description="Check Evo's setup status for this server.")
+@app_commands.default_permissions(administrator=True)
+async def evo_setup_check(interaction: discord.Interaction):
+    server_id = str(interaction.guild.id)
+    server_ref = db.collection('server_configs').document(server_id)
+    server_doc = server_ref.get()
+
+    if server_doc.exists:
+        embed = discord.Embed(
+            title="Evo is Ready!",
+            description=f"Your bot is all set-up and ready to chat.\n\nYou can make changes to your bot's settings at any time on the [Evo Dashboard]({WEBSITE_URL}).",
+            color=discord.Color.green()
+        )
+    else:
+        embed = discord.Embed(
+            title="Evo is Not Yet Setup",
+            description=f"Evo needs to be configured before she can start chatting on this server.\n\nAn administrator can set her up in a few clicks on the [Evo Dashboard]({WEBSITE_URL}).",
+            color=discord.Color.red()
+        )
+    
+    await interaction.response.send_message(embed=embed, ephemeral=True)
+
+# ==================================================================================
+# 4. DISCORD EVENTS
 # ==================================================================================
 
 @bot.event
 async def on_ready():
     print(f'Evo is online! Logged in as {bot.user}')
-    print("Slash command syncing would happen here.")
+    for guild in bot.guilds:
+        server_ref = db.collection('server_configs').document(str(guild.id))
+        server_doc = server_ref.get()
+        if server_doc.exists:
+            server_config = server_doc.to_dict()
+            bot_name = server_config.get('custom_bot_name')
+            if bot_name and guild.me.nick != bot_name:
+                try: await guild.me.edit(nick=bot_name)
+                except discord.Forbidden: pass
+        else:
+            # Point 1: If name is not changed (no config), set to Evo
+            if guild.me.nick != "Evo":
+                try: await guild.me.edit(nick="Evo")
+                except discord.Forbidden: pass
 
 @bot.event
 async def on_message(message):
-    if message.author == bot.user: return
+    if message.author == bot.user or not message.guild: return
 
     server_id = str(message.guild.id)
     server_ref = db.collection('server_configs').document(server_id)
@@ -152,7 +191,7 @@ async def on_message(message):
     if not (is_reply or is_mentioned or is_name_called): return
 
     designated_channel = server_config.get('designated_channel')
-    if designated_channel and designated_channel != 'all' and designated_channel != str(message.channel.id): return
+    if designated_channel and designated_channel != 'all' and str(message.channel.id) != designated_channel: return
 
     async with message.channel.typing():
         try:
@@ -163,17 +202,17 @@ async def on_message(message):
             
             conversation_history = user_memory.get('conversation_history', [])
             personal_summary = user_memory.get('personal_summary', 'No summary available.')
-            gossip_summary = user_memory.get('gossip_summary', 'No gossip available.')
-
+            
             final_personality = server_config.get('custom_personality') or DEFAULT_PERSONALITY.get('system_prompt_components', {}).get('personality')
             rules = "\n".join(DEFAULT_PERSONALITY.get('system_prompt_components', {}).get('rules', []))
-            system_instruction = f"{final_personality}\n\n{rules}"
+            
+            # Point 3: Inject the name separately
+            name_instruction = f"You are {server_config.get('custom_bot_name', 'Evo')}."
+            system_instruction = f"{name_instruction}\n{final_personality}\n\n{rules}"
             
             prompt = f"""
             Here is a summary of what you know about the user '{message.author.display_name}':
             {personal_summary}
-            Here is some gossip you've heard about them:
-            {gossip_summary}
             Recent conversation history (user messages are prefixed with 'User:', your responses with 'AI:'):
             {''.join(conversation_history)}
             Now, respond to this new message from the user:
@@ -218,32 +257,32 @@ async def on_message(message):
             else:
                 await message.reply(reply_to_user)
 
-            # --- Learning Phase ---
             latest_exchange = f"User: {message.clean_content}\nAI: {ai_response_text}\n"
             new_history = conversation_history + [latest_exchange]
             
-            await asyncio.to_thread(
-                memory_ref.set,
-                {'conversation_history': new_history[-10:]},
-                merge=True
-            )
+            await asyncio.to_thread(memory_ref.set, {'conversation_history': new_history[-10:]}, merge=True)
             
-            if model: # Ensure we have a working model before trying to reflect
-                await update_summaries(model, memory_ref, message.author.display_name, latest_exchange, personal_summary, gossip_summary)
+            if model:
+                # Update personal summary for the author
+                await update_summaries(model, memory_ref, message.author.display_name, latest_exchange, personal_summary)
+                
+                # Point 2: Update gossip summary for mentioned users
+                if message.mentions:
+                    for mentioned_user in message.mentions:
+                        if mentioned_user != bot.user:
+                            await update_gossip_summary(model, server_id, mentioned_user, message.author.display_name, message.clean_content)
             
             new_name = server_config.get('custom_bot_name')
             if new_name and message.guild.me.nick != new_name:
-                try:
-                    await message.guild.me.edit(nick=new_name)
-                except discord.Forbidden:
-                    print(f"Could not change nickname on server {server_id}. Missing permissions.")
+                try: await message.guild.me.edit(nick=new_name)
+                except discord.Forbidden: print(f"Could not change nickname on server {server_id}. Missing permissions.")
 
         except Exception as e:
             print(f"An unexpected error occurred in on_message: {e}")
             await message.reply("Something went very wrong while I was thinking. My apologies!")
 
 # ==================================================================================
-# 4. RUN THE BOT
+# 5. RUN THE BOT
 # ==================================================================================
 if __name__ == "__main__":
     bot.run(DISCORD_BOT_TOKEN)
