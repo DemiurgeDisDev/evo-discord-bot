@@ -155,11 +155,16 @@ def callback():
 
         discord = OAuth2Session(DISCORD_CLIENT_ID, state=session_state, redirect_uri=DISCORD_REDIRECT_URI)
         
+        # FIX: Ensure the callback URL uses https when running behind a proxy
+        authorization_response = request.url
+        if authorization_response.startswith('http://'):
+            authorization_response = 'https://' + authorization_response[7:]
+
         print("Attempting to fetch token from Discord...")
         token = discord.fetch_token(
             TOKEN_URL,
             client_secret=DISCORD_CLIENT_SECRET,
-            authorization_response=request.url
+            authorization_response=authorization_response
         )
         
         print("Token fetched successfully.")
