@@ -2,11 +2,11 @@ from flask import Flask, jsonify, request, redirect, session
 from flask_cors import CORS
 import os
 import requests
-from requests_oauthlib import OAuth2Session
 import firebase_admin
 from firebase_admin import credentials, firestore
 from cryptography.fernet import Fernet
 import traceback
+from urllib.parse import urlencode
 
 # --- INITIALIZATION ---
 app = Flask(__name__)
@@ -32,7 +32,6 @@ try:
         cred_json = json.loads(os.environ.get('FIREBASE_CREDENTIALS_JSON'))
         cred = credentials.Certificate(cred_json)
     else:
-        # This path is for local development, Render uses the environment variable.
         cred = credentials.ApplicationDefault()
         
     firebase_admin.initialize_app(cred)
@@ -66,11 +65,6 @@ def decrypt_key(encrypted_key):
         return cipher_suite.decrypt(encrypted_key.encode()).decode()
     except Exception:
         return ""
-
-def get_user_guilds(token):
-    discord = OAuth2Session(DISCORD_CLIENT_ID, token=token)
-    response = discord.get(API_BASE_URL + '/users/@me/guilds')
-    return response.json() if response.status_code == 200 else []
 
 # --- API ROUTES ---
 
@@ -132,28 +126,25 @@ def upload_avatar(server_id):
 # --- DISCORD OAUTH2 ROUTES ---
 @app.route('/login')
 def login():
-    scope = ['identify', 'guilds']
-    discord = OAuth2Session(DISCORD_CLIENT_ID, redirect_uri=DISCORD_REDIRECT_URI, scope=scope)
-    authorization_url, state = discord.authorization_url(AUTHORIZATION_BASE_URL)
-    session['oauth2_state'] = state
+    params = {
+        'client_id': DISCORD_CLIENT_ID,
+        'redirect_uri': DISCORD_REDIRECT_URI,
+        'response_type': 'code',
+        'scope': 'identify guilds'
+    }
+    authorization_url = f"{AUTHORIZATION_BASE_URL}?{urlencode(params)}"
     return redirect(authorization_url)
 
 @app.route('/callback')
 def callback():
     try:
         if 'error' in request.args:
-            error_description = request.args.get('error_description', 'No description provided.')
-            print(f"Discord returned an error on callback: {request.args['error']} - {error_description}")
-            return f"An error occurred during authentication: {error_description}", 400
-
-        if session.get('oauth2_state') != request.args.get('state'):
-            return "State mismatch. Please try logging in again.", 400
+            return f"An error occurred: {request.args['error_description']}", 400
 
         code = request.args.get('code')
         if not code:
             return "Missing authorization code from Discord.", 400
 
-        # --- MANUAL TOKEN EXCHANGE ---
         data = {
             'client_id': DISCORD_CLIENT_ID,
             'client_secret': DISCORD_CLIENT_SECRET,
@@ -161,25 +152,16 @@ def callback():
             'code': code,
             'redirect_uri': DISCORD_REDIRECT_URI
         }
-        headers = {
-            'Content-Type': 'application/x-www-form-urlencoded'
-        }
+        headers = { 'Content-Type': 'application/x-www-form-urlencoded' }
         
-        print("Manually posting to Discord token URL with data:", data)
         token_response = requests.post(TOKEN_URL, data=data, headers=headers)
-        
-        # Log the raw response from Discord
-        print(f"Discord token response status: {token_response.status_code}")
-        print(f"Discord token response body: {token_response.text}")
-        
-        token_response.raise_for_status() # Raise an exception for bad status codes
-        token = token_response.json()
-        
-        session['discord_token'] = token
-        
-        # Use the token to get user info
-        discord = OAuth2Session(DISCORD_CLIENT_ID, token=token)
-        user_info_response = discord.get(API_BASE_URL + '/users/@me')
+        token_response.raise_for_status()
+        token_data = token_response.json()
+
+        session['discord_token'] = token_data
+
+        user_headers = { 'Authorization': f"Bearer {token_data['access_token']}" }
+        user_info_response = requests.get(f"{API_BASE_URL}/users/@me", headers=user_headers)
         user_info_response.raise_for_status()
         user_info = user_info_response.json()
         session['user'] = user_info
@@ -203,13 +185,16 @@ def get_current_user():
     if user: return jsonify(user)
     return jsonify({"error": "Not logged in"}), 401
 
-# --- LIVE DATA API ROUTES ---
 @app.route('/api/user-servers', methods=['GET'])
 def get_user_servers():
     if not session.get('user'): return jsonify({"error": "Not logged in"}), 401
     if not db: return jsonify({"error": "Database not connected"}), 500
     
-    user_guilds = get_user_guilds(session.get('discord_token'))
+    token = session.get('discord_token')
+    headers = { 'Authorization': f"Bearer {token['access_token']}" }
+    response = requests.get(f"{API_BASE_URL}/users/@me/guilds", headers=headers)
+    user_guilds = response.json() if response.status_code == 200 else []
+    
     admin_guild_ids = {g['id'] for g in user_guilds if (int(g['permissions']) & 0x8) == 0x8}
 
     configs_ref = db.collection('server_configs').stream()
@@ -228,7 +213,11 @@ def get_available_servers():
     if not session.get('user'): return jsonify({"error": "Not logged in"}), 401
     if not db: return jsonify({"error": "Database not connected"}), 500
     
-    user_guilds = get_user_guilds(session.get('discord_token'))
+    token = session.get('discord_token')
+    headers = { 'Authorization': f"Bearer {token['access_token']}" }
+    response = requests.get(f"{API_BASE_URL}/users/@me/guilds", headers=headers)
+    user_guilds = response.json() if response.status_code == 200 else []
+    
     configs_ref = db.collection('server_configs').stream()
     configured_guild_ids = {config.id for config in configs_ref}
     
@@ -310,7 +299,6 @@ def save_server_settings(server_id):
     
     return jsonify({"status": "success", "message": f"Settings for server {server_id} saved."})
 
-# This part allows us to run the app.
 if __name__ == "__main__":
     port = int(os.environ.get('PORT', 8080))
     app.run(host='0.0.0.0', port=port)
