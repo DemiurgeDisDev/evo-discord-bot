@@ -152,7 +152,11 @@ def callback():
             'code': code,
             'redirect_uri': DISCORD_REDIRECT_URI
         }
-        headers = { 'Content-Type': 'application/x-www-form-urlencoded' }
+        headers = { 
+            'Content-Type': 'application/x-www-form-urlencoded',
+            # FIX: Add a standard browser User-Agent to avoid being rate-limited
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/108.0.0.0 Safari/537.36'
+        }
         
         token_response = requests.post(TOKEN_URL, data=data, headers=headers)
         token_response.raise_for_status()
